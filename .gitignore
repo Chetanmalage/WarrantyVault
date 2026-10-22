@@ -1,0 +1,35 @@
+cat > .gitignore <<'EOF'
+# Dependencies
+node_modules/
+*/node_modules/
+**/node_modules/
+
+# Environment files (SECRETS)
+.env
+.env.*
+*/.env
+*/.env.*
+
+# Build output
+client/dist/
+client/build/
+
+# Uploaded files (user data)
+server/uploads/*
+!server/uploads/.gitkeep
+!server/uploads/photos/
+server/uploads/photos/*
+!server/uploads/photos/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+EOF
