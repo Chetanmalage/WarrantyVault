@@ -1,6 +1,7 @@
 const Product = require('../models/Product');
 const ServiceRecord = require('../models/ServiceRecord');
 const Document = require('../models/Document');
+const ReminderDelivery = require('../models/ReminderDelivery');
 const fs = require('fs');
 const path = require('path');
 
@@ -128,6 +129,7 @@ exports.deleteProduct = async (req, res, next) => {
     await Promise.all([
       Document.deleteMany({ product: product._id, user: req.user._id }),
       ServiceRecord.deleteMany({ product: product._id, user: req.user._id }),
+      ReminderDelivery.deleteMany({ product: product._id, user: req.user._id }),
       product.deleteOne(),
     ]);
 

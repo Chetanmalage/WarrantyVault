@@ -30,7 +30,7 @@ export default function Settings() {
       <div>
         <h5 className="section-title mb-1">Email reminders</h5>
         <p className="text-muted small mb-0">
-          We'll email you a summary when any of your product warranties are about to expire.
+          We'll send one email summary when a product first enters your selected expiry window. You won't get a repeat email every day for the same expiry date.
         </p>
       </div>
 
@@ -41,7 +41,7 @@ export default function Settings() {
             <input className="form-check-input" type="checkbox" id="emailReminders"
               checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
             <label className="form-check-label" htmlFor="emailReminders">
-              Send me daily warranty reminders
+              Email me warranty expiration notifications
             </label>
           </div>
 

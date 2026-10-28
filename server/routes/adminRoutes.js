@@ -9,7 +9,10 @@ const User = require('../models/User');
 const Product = require('../models/Product');
 const ServiceRecord = require('../models/ServiceRecord');
 const Document = require('../models/Document');
+const ReminderDelivery = require('../models/ReminderDelivery');
+const ReminderRun = require('../models/ReminderRun');
 const { sendDueReminders } = require('../utils/reminders');
+const { getMailStatus } = require('../utils/mailer');
 
 router.use(protect, requireAdmin);
 
@@ -21,7 +24,7 @@ router.get('/stats', async (req, res, next) => {
       ServiceRecord.countDocuments(),
       Document.countDocuments(),
     ]);
-    res.json({ users, products, services, documents });
+    res.json({ users, products, services, documents, emailDelivery: getMailStatus() });
   } catch (err) { next(err); }
 });
 
@@ -89,6 +92,8 @@ router.delete('/users/:id', async (req, res, next) => {
       Document.deleteMany({ user: user._id }),
       ServiceRecord.deleteMany({ user: user._id }),
       Product.deleteMany({ user: user._id }),
+      ReminderDelivery.deleteMany({ user: user._id }),
+      ReminderRun.deleteMany({ user: user._id }),
       user.deleteOne(),
     ]);
 

@@ -43,12 +43,16 @@ exports.updatePreferences = async (req, res, next) => {
   try {
     const { emailReminders, reminderDays } = req.body;
 
-    if (emailReminders !== undefined) req.user.emailReminders = !!emailReminders;
+    if (emailReminders !== undefined) {
+      if (typeof emailReminders !== 'boolean')
+        return res.status(400).json({ message: 'Email reminders must be true or false' });
+      req.user.emailReminders = emailReminders;
+    }
 
     if (reminderDays !== undefined) {
       const n = Number(reminderDays);
-      if (Number.isNaN(n) || n < 1 || n > 90)
-        return res.status(400).json({ message: 'Reminder days must be between 1 and 90' });
+      if (!Number.isInteger(n) || n < 1 || n > 90)
+        return res.status(400).json({ message: 'Reminder days must be a whole number between 1 and 90' });
       req.user.reminderDays = n;
     }
 

@@ -42,7 +42,8 @@ export default function Admin() {
     setBusy(true); setFlash('');
     try {
       const { data } = await api.post('/admin/send-reminders');
-      setFlash(`Reminder run finished — ${data.emailsSent} email(s) sent, ${data.skipped} skipped.`);
+      const smtpNote = data.emailConfigured ? '' : ' SMTP is not configured; previewed emails were not delivered.';
+      setFlash(`Reminder run finished — ${data.emailsSent} sent, ${data.emailsPreviewed} previewed, ${data.skipped} skipped, ${data.failed} failed.${smtpNote}`);
     } catch (e) {
       setFlash(e.response?.data?.message || 'Failed to send reminders');
     } finally { setBusy(false); }
@@ -54,6 +55,13 @@ export default function Admin() {
         <div>
           <h5 className="section-title mb-1">Platform overview</h5>
           <p className="text-muted small mb-0">Global stats and user management</p>
+          {stats && (
+            <p className="small mb-0 mt-1">
+              Email delivery: <span className={`pill ${stats.emailDelivery?.configured ? 'ok' : 'warn'}`}>
+                {stats.emailDelivery?.configured ? 'SMTP configured' : 'SMTP not configured'}
+              </span>
+            </p>
+          )}
         </div>
         <button className="btn btn-primary btn-sm" onClick={triggerReminders} disabled={busy}>
           <i className="bi bi-send me-1" />{busy ? 'Sending…' : 'Send reminders now'}
