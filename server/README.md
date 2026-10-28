@@ -11,3 +11,7 @@ Configure SMTP in the server's environment (not in source control). Copy `.env.e
 The scheduler runs inside the Node server process, so keep at least one backend instance running. If the hosting platform sleeps the server or runs it only as serverless functions, use an always-on worker or that platform's scheduled-job service to invoke the reminder job instead.
 
 Users can turn reminders on or off and select their reminder window in **Settings → Email reminders**. An administrator can manually run the same due-reminder job from the Admin panel. The manual run respects user preferences and duplicate protection.
+
+## Environment variable inventory
+
+The server example covers all server variables used by the code: `PORT`, `MONGO_URI`, `JWT_SECRET`, `CLIENT_URL`, `APP_URL`, optional `ADMIN_EMAIL` and `ADMIN_PASSWORD` (set both or leave both blank), `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `REMINDER_CRON`, and `REMINDER_TIMEZONE`. Keep real secrets in your deployment's secret/environment settings, not in Git. The client has a separate [`client/.env.example`](../client/.env.example) for optional `VITE_API_URL`; blank uses the built-in development and production defaults. Vite's `import.meta.env.DEV` flag is supplied by Vite and should not be set manually.
