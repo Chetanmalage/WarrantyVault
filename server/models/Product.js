@@ -25,8 +25,10 @@ const productSchema = new mongoose.Schema(
 productSchema.virtual('daysRemaining').get(function () {
   if (!this.warrantyEnd) return null;
   const end = new Date(this.warrantyEnd);
-  end.setHours(23, 59, 59, 999);
-  return Math.ceil((end.getTime() - Date.now()) / 86400000);
+  const expiryDay = Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate());
+  const today = new Date();
+  const currentDay = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+  return Math.round((expiryDay - currentDay) / 86400000);
 });
 
 productSchema.virtual('warrantyStatus').get(function () {

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import api, { API_ORIGIN } from '../api/axios';
+import api from '../api/axios';
 import Modal from '../components/Modal';
 import ProductForm from '../components/ProductForm';
 import StatusBadge from '../components/StatusBadge';
 import { date, daysLabel, money, warrantyProgress } from '../utils/format';
+import { downloadAuthenticatedFile } from '../utils/download';
 
 const emptyService = {
   serviceType: 'Repair',
@@ -58,7 +59,6 @@ export default function ProductDetail() {
   if (!data) return <div className="app-loader"><div className="spinner" /></div>;
 
   const { product, services, documents } = data;
-  const token = localStorage.getItem('wv_token');
 
   const saveProduct = async (form) => {
     setSaving(true);
@@ -139,6 +139,11 @@ export default function ProductDetail() {
     } catch (e) {
       alert(e.response?.data?.message || 'Could not delete document');
     }
+  };
+
+  const downloadDoc = async (doc) => {
+    try { await downloadAuthenticatedFile(`/documents/${doc._id}/file`, doc.fileName || doc.title); }
+    catch (e) { alert(e.response?.data?.message || 'Could not download document'); }
   };
 
   return (
@@ -273,11 +278,9 @@ export default function ProductDetail() {
                       <strong className="small d-block text-truncate">{d.title}</strong>
                       <small className="text-muted">{d.docType} · {(d.size / 1024).toFixed(0)} KB</small>
                     </div>
-                    <a className="icon-btn" title="Download"
-                      href={`${API_ORIGIN}/api/documents/${d._id}/file?token=${token}`}
-                      target="_blank" rel="noreferrer">
+                    <button type="button" className="icon-btn" title="Download" onClick={() => downloadDoc(d)}>
                       <i className="bi bi-download" />
-                    </a>
+                    </button>
                     <button className="icon-btn danger" title="Delete" onClick={() => deleteDoc(d._id)}>
                       <i className="bi bi-trash3" />
                     </button>

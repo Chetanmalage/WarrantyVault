@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { dateInputValue } from '../utils/format';
 
 const CATEGORIES = ['Mobile', 'Laptop', 'TV', 'Home Appliance', 'Camera', 'Other'];
 
@@ -8,21 +9,21 @@ const empty = {
   warrantyProvider: '', coverageDetails: '',
 };
 
-const toInput = (d) => (d ? new Date(d).toISOString().slice(0, 10) : '');
 const addYear = (d) => {
   if (!d) return '';
-  const dt = new Date(d);
+  const [year, month, day] = d.split('-').map(Number);
+  const dt = new Date(year, month - 1, day, 12);
   dt.setFullYear(dt.getFullYear() + 1);
-  return dt.toISOString().slice(0, 10);
+  return dateInputValue(dt);
 };
 
 export default function ProductForm({ initial, onSubmit, submitting, onCancel }) {
   const [form, setForm] = useState(() => ({
     ...empty,
     ...initial,
-    purchaseDate: toInput(initial?.purchaseDate),
-    warrantyStart: toInput(initial?.warrantyStart),
-    warrantyEnd: toInput(initial?.warrantyEnd),
+    purchaseDate: dateInputValue(initial?.purchaseDate),
+    warrantyStart: dateInputValue(initial?.warrantyStart),
+    warrantyEnd: dateInputValue(initial?.warrantyEnd),
   }));
 
   const set = (k) => (e) => {
@@ -88,7 +89,8 @@ export default function ProductForm({ initial, onSubmit, submitting, onCancel })
       </div>
       <div className="col-md-6">
         <label className="form-label">Warranty expiry *</label>
-        <input type="date" className="form-control" value={form.warrantyEnd} onChange={set('warrantyEnd')} required />
+        <input type="date" className="form-control" value={form.warrantyEnd}
+          min={form.warrantyStart || form.purchaseDate || undefined} onChange={set('warrantyEnd')} required />
       </div>
       <div className="col-12">
         <label className="form-label">Coverage details</label>

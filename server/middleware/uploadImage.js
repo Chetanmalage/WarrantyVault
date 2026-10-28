@@ -21,5 +21,5 @@ module.exports = multer({
   fileFilter: (req, file, cb) =>
     allowed.includes(file.mimetype)
       ? cb(null, true)
-      : cb(new Error('Only JPG, PNG or WEBP images up to 3MB are allowed')),
+      : cb(Object.assign(new Error('Only JPG, PNG or WEBP images up to 3MB are allowed'), { status: 400 })),
 });

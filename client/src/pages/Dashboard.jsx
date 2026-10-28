@@ -3,11 +3,16 @@ import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import StatCard from '../components/StatCard';
 import StatusBadge from '../components/StatusBadge';
-import { date, daysLabel, money, reportUrl } from '../utils/format';
+import { date, daysLabel, money } from '../utils/format';
+import { downloadAuthenticatedFile } from '../utils/download';
 
 export default function Dashboard() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
+  const downloadReport = async () => {
+    try { await downloadAuthenticatedFile('/reports/products.pdf', 'warrantyvault-report.pdf'); }
+    catch (e) { alert(e.response?.data?.message || 'Could not download report'); }
+  };
 
   useEffect(() => {
     api.get('/dashboard')
@@ -144,9 +149,9 @@ export default function Dashboard() {
       </div>
 
       <div className="d-flex justify-content-end">
-        <a className="btn btn-soft btn-sm" href={reportUrl('products.pdf')} download>
+        <button className="btn btn-soft btn-sm" onClick={downloadReport}>
           <i className="bi bi-file-earmark-pdf me-1" />Download full report (PDF)
-        </a>
+        </button>
       </div>
     </div>
   );

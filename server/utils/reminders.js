@@ -1,6 +1,9 @@
 const User = require('../models/User');
 const Product = require('../models/Product');
 const { sendMail } = require('./mailer');
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+}[char]));
 
 function buildHtml(user, items) {
   const rows = items
@@ -8,11 +11,11 @@ function buildHtml(user, items) {
       (p) => `
       <tr>
         <td style="padding:10px;border-bottom:1px solid #eee">
-          <strong>${p.name}</strong><br>
-          <small style="color:#64748b">${p.brand || '—'} · ${p.category}</small>
+          <strong>${escapeHtml(p.name)}</strong><br>
+          <small style="color:#64748b">${escapeHtml(p.brand || '—')} · ${escapeHtml(p.category)}</small>
         </td>
         <td style="padding:10px;border-bottom:1px solid #eee">
-          ${new Date(p.warrantyEnd).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+          ${escapeHtml(new Date(p.warrantyEnd).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }))}
         </td>
         <td style="padding:10px;border-bottom:1px solid #eee;font-weight:600;color:${p.daysRemaining <= 7 ? '#dc2626' : '#b45309'}">
           ${p.daysRemaining} day${p.daysRemaining === 1 ? '' : 's'} left
@@ -23,7 +26,7 @@ function buildHtml(user, items) {
 
   return `
     <div style="font-family:Inter,Arial,sans-serif;max-width:600px;margin:auto;padding:24px;background:#f8fafc;border-radius:14px">
-      <h2 style="color:#0f172a;margin:0 0 8px">Hi ${user.name.split(' ')[0]} 👋</h2>
+      <h2 style="color:#0f172a;margin:0 0 8px">Hi ${escapeHtml(user.name.split(' ')[0])}</h2>
       <p style="color:#475569;margin:0 0 18px">Some of your product warranties are expiring soon. Here's the list:</p>
       <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;font-size:14px">
         <thead>
@@ -48,12 +51,15 @@ async function sendDueReminders() {
 
   for (const user of users) {
     const days = user.reminderDays || 30;
-    const horizon = new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const horizon = new Date(today);
     horizon.setDate(horizon.getDate() + days);
+    horizon.setHours(23, 59, 59, 999);
 
     const products = await Product.find({
       user: user._id,
-      warrantyEnd: { $gte: new Date(), $lte: horizon },
+      warrantyEnd: { $gte: today, $lte: horizon },
     });
 
     if (!products.length) { skipped++; continue; }

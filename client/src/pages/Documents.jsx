@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import api, { API_ORIGIN } from '../api/axios';
+import api from '../api/axios';
 import { date } from '../utils/format';
+import { downloadAuthenticatedFile } from '../utils/download';
 
 export default function Documents() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const token = localStorage.getItem('wv_token');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -28,6 +28,11 @@ export default function Documents() {
     if (!window.confirm('Delete this document?')) return;
     try { await api.delete(`/documents/${id}`); load(); }
     catch (e) { alert(e.response?.data?.message || 'Could not delete document'); }
+  };
+
+  const download = async (doc) => {
+    try { await downloadAuthenticatedFile(`/documents/${doc._id}/file`, doc.fileName || doc.title); }
+    catch (e) { alert(e.response?.data?.message || 'Could not download document'); }
   };
 
   if (error) return <div className="alert alert-danger">{error}</div>;
@@ -62,11 +67,9 @@ export default function Documents() {
                 {d.product?.name || 'Deleted product'} · {(d.size / 1024).toFixed(0)} KB · {date(d.createdAt)}
               </p>
               <div className="d-flex gap-2">
-                <a className="btn btn-sm btn-soft flex-fill"
-                  href={`${API_ORIGIN}/api/documents/${d._id}/file?token=${token}`}
-                  target="_blank" rel="noreferrer">
-                  <i className="bi bi-download me-1" />Open
-                </a>
+                <button className="btn btn-sm btn-soft flex-fill" onClick={() => download(d)}>
+                  <i className="bi bi-download me-1" />Download
+                </button>
                 <button className="btn btn-sm btn-soft danger" onClick={() => remove(d._id)}>
                   <i className="bi bi-trash3" />
                 </button>

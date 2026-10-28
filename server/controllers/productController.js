@@ -15,23 +15,49 @@ const deleteFile = (dir, name) => {
 
 const FIELDS = ['name', 'brand', 'category', 'purchaseDate', 'purchasePrice', 'invoiceNumber',
   'store', 'serialNumber', 'warrantyStart', 'warrantyEnd', 'warrantyProvider', 'coverageDetails'];
+const DATE_FIELDS = new Set(['purchaseDate', 'warrantyStart', 'warrantyEnd']);
 
-const pick = (body) =>
-  FIELDS.reduce((acc, f) => {
-    if (body[f] !== undefined && body[f] !== '') acc[f] = body[f];
-    return acc;
-  }, {});
+const pick = (body = {}) => FIELDS.reduce((acc, field) => {
+  if (body[field] !== undefined) {
+    const value = body[field];
+    if (field === 'purchasePrice' && (value === '' || value === null)) acc[field] = 0;
+    else if (DATE_FIELDS.has(field) && value === '') acc[field] = null;
+    else acc[field] = value;
+  }
+  return acc;
+}, {});
+const REGEX_META = new Set(['\\', '^', '$', '.', '|', '?', '*', '+', '(', ')', '[', ']', '{', '}']);
+const escapeRegex = (value) => Array.from(value, (char) => REGEX_META.has(char) ? `\\${char}` : char).join('');
+const dayNumber = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+};
+const dateError = ({ purchaseDate, warrantyStart, warrantyEnd }) => {
+  const purchase = dayNumber(purchaseDate);
+  const start = dayNumber(warrantyStart);
+  const end = dayNumber(warrantyEnd);
+  if (purchaseDate && purchase === null) return 'Purchase date is invalid';
+  if (warrantyStart && start === null) return 'Warranty start date is invalid';
+  if (warrantyEnd && end === null) return 'Warranty end date is invalid';
+  if (start !== null && end !== null && start > end) return 'Warranty start date must be on or before the expiry date';
+  if (purchase !== null && end !== null && purchase > end) return 'Warranty expiry cannot be before the purchase date';
+  return '';
+};
 
 exports.getProducts = async (req, res, next) => {
   try {
-    const { search = '', category = '', status = '' } = req.query;
+    const search = String(req.query.search || '').trim().slice(0, 100);
+    const { category = '', status = '' } = req.query;
     const query = { user: req.user._id };
 
     if (search) {
+      const literal = new RegExp(escapeRegex(search), 'i');
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { brand: { $regex: search, $options: 'i' } },
-        { serialNumber: { $regex: search, $options: 'i' } },
+        { name: literal },
+        { brand: literal },
+        { serialNumber: literal },
       ];
     }
     if (category) query.category = category;
@@ -64,6 +90,8 @@ exports.createProduct = async (req, res, next) => {
     if (!data.purchaseDate) return res.status(400).json({ message: 'Purchase date is required' });
     if (!data.warrantyEnd) return res.status(400).json({ message: 'Warranty end date is required' });
     if (!data.warrantyStart) data.warrantyStart = data.purchaseDate;
+    const invalidDates = dateError(data);
+    if (invalidDates) return res.status(400).json({ message: invalidDates });
 
     const product = await Product.create({ ...data, user: req.user._id });
     res.status(201).json(product);
@@ -75,7 +103,14 @@ exports.updateProduct = async (req, res, next) => {
     const product = await Product.findOne({ _id: req.params.id, user: req.user._id });
     if (!product) return res.status(404).json({ message: 'Product not found' });
 
-    Object.assign(product, pick(req.body));
+    const updates = pick(req.body);
+    const invalidDates = dateError({
+      purchaseDate: updates.purchaseDate ?? product.purchaseDate,
+      warrantyStart: updates.warrantyStart ?? product.warrantyStart,
+      warrantyEnd: updates.warrantyEnd ?? product.warrantyEnd,
+    });
+    if (invalidDates) return res.status(400).json({ message: invalidDates });
+    Object.assign(product, updates);
     await product.save();
     res.json(product);
   } catch (err) { next(err); }

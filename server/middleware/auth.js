@@ -4,7 +4,7 @@ const User = require('../models/User');
 module.exports = async (req, res, next) => {
   try {
     const header = req.headers.authorization || '';
-    const token = header.startsWith('Bearer ') ? header.split(' ')[1] : req.query.token;
+    const token = header.startsWith('Bearer ') ? header.slice(7) : null;
     if (!token) return res.status(401).json({ message: 'Not authorized, no token' });
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
