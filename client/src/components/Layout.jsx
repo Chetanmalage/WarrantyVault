@@ -35,6 +35,7 @@ export default function Layout() {
     { to: '/documents', label: 'Documents', icon: 'bi-folder2-open' },
     { to: '/calendar', label: 'Calendar', icon: 'bi-calendar3' },
     { to: '/warranties/expiring', label: 'Expiring', icon: 'bi-hourglass-split' },
+    { to: '/warranties/history', label: 'History', icon: 'bi-clock-history' },
     { to: '/reports', label: 'Reports', icon: 'bi-bar-chart' },
     { to: '/notifications', label: 'Notifications', icon: 'bi-bell' },
     { to: '/support', label: 'Support', icon: 'bi-life-preserver' },

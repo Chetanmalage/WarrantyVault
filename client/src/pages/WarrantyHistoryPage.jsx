@@ -36,7 +36,14 @@ export default function WarrantyHistoryPage() {
           <div className="table-responsive">
             <table className="table wv-table align-middle mb-0">
               <thead>
-                <tr><th>Product</th><th>Category</th><th>Warranty ended</th><th>Duration</th><th>Status</th></tr>
+                <tr>
+                  <th>Product</th>
+                  <th>Category</th>
+                  <th>Warranty ended</th>
+                  <th>Duration</th>
+                  <th>Status</th>
+                  <th className="text-end">Action</th>
+                </tr>
               </thead>
               <tbody>
                 {products.map((product) => (
