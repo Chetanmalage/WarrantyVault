@@ -6,9 +6,19 @@ import { useTheme } from '../context/ThemeContext';
 const TITLES = {
   '/': 'Dashboard',
   '/products': 'Products',
+  '/products/add': 'Add Product',
   '/services': 'Service Records',
+  '/services/add': 'Add Service Record',
   '/documents': 'Documents',
-  '/settings': 'Settings',
+  '/calendar': 'Warranty Calendar',
+  '/warranties/expiring': 'Expiring Warranties',
+  '/warranties/history': 'Warranty History',
+  '/reports': 'Reports & Analytics',
+  '/profile': 'User Profile',
+  '/notifications': 'Notifications Center',
+  '/support': 'Help & Support',
+  '/about': 'About WarrantyVault',
+  '/settings': 'Account Settings',
   '/admin': 'Admin Panel',
 };
 
@@ -23,13 +33,24 @@ export default function Layout() {
     { to: '/products', label: 'Products', icon: 'bi-box-seam' },
     { to: '/services', label: 'Service Records', icon: 'bi-tools' },
     { to: '/documents', label: 'Documents', icon: 'bi-folder2-open' },
+    { to: '/calendar', label: 'Calendar', icon: 'bi-calendar3' },
+    { to: '/warranties/expiring', label: 'Expiring', icon: 'bi-hourglass-split' },
+    { to: '/reports', label: 'Reports', icon: 'bi-bar-chart' },
+    { to: '/notifications', label: 'Notifications', icon: 'bi-bell' },
+    { to: '/support', label: 'Support', icon: 'bi-life-preserver' },
+    { to: '/about', label: 'About', icon: 'bi-info-circle' },
     { to: '/settings', label: 'Settings', icon: 'bi-gear' },
   ];
+
   const nav = user?.role === 'admin'
     ? [...baseNav, { to: '/admin', label: 'Admin Panel', icon: 'bi-shield-lock' }]
     : baseNav;
 
-  const title = pathname.startsWith('/products/') ? 'Product Details' : TITLES[pathname] || 'WarrantyVault';
+  const title = TITLES[pathname]
+    || (pathname.startsWith('/products/') && pathname.includes('/edit') ? 'Edit Product'
+      : pathname.startsWith('/products/') ? 'Product Details'
+      : pathname.startsWith('/warranties/') ? 'Warranty Details' : 'WarrantyVault');
+
   const today = new Date().toLocaleDateString(undefined, {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
@@ -88,6 +109,12 @@ export default function Layout() {
             <h1 className="page-title text-truncate">{title}</h1>
             <p className="page-sub d-none d-sm-block">{today}</p>
           </div>
+          <Link to="/notifications" className="btn btn-soft btn-sm">
+            <i className="bi bi-bell me-1" />Alerts
+          </Link>
+          <Link to="/profile" className="btn btn-soft btn-sm">
+            <i className="bi bi-person me-1" />Profile
+          </Link>
           <button
             className="theme-toggle"
             onClick={toggle}
@@ -95,7 +122,7 @@ export default function Layout() {
           >
             <i className={`bi ${theme === 'dark' ? 'bi-sun' : 'bi-moon-stars'}`} />
           </button>
-          <Link to="/products?new=1" className="btn btn-primary btn-sm">
+          <Link to="/products/add" className="btn btn-primary btn-sm">
             <i className="bi bi-plus-lg me-1" />Add Product
           </Link>
         </header>
