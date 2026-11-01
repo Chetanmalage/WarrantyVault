@@ -3,9 +3,9 @@ const User = require('../models/User');
 const Product = require('../models/Product');
 const ServiceRecord = require('../models/ServiceRecord');
 
-const demoName = process.env.DEMO_NAME || 'Demo User';
-const demoEmail = (process.env.DEMO_EMAIL || 'demo@warrantyvault.local').toLowerCase();
-const demoPassword = process.env.DEMO_PASSWORD || 'Demo123!';
+const placeholderName = process.env.PLACEHOLDER_NAME || 'Sample User';
+const placeholderEmail = (process.env.PLACEHOLDER_EMAIL || 'user@warrantyvault.local').toLowerCase();
+const placeholderPassword = process.env.PLACEHOLDER_PASSWORD || 'Password123!';
 
 const toIsoDate = (daysAgoOrAhead = 0) => {
   const date = new Date();
@@ -14,12 +14,12 @@ const toIsoDate = (daysAgoOrAhead = 0) => {
   return date;
 };
 
-module.exports = async function seedDemoData() {
-  const existingUser = await User.findOne({ email: demoEmail });
+module.exports = async function seedPlaceholderData() {
+  const existingUser = await User.findOne({ email: placeholderEmail });
   const user = existingUser || await User.create({
-    name: demoName,
-    email: demoEmail,
-    password: await bcrypt.hash(demoPassword, 10),
+    name: placeholderName,
+    email: placeholderEmail,
+    password: await bcrypt.hash(placeholderPassword, 10),
     role: 'user',
     emailReminders: true,
     reminderDays: 30,
@@ -27,7 +27,7 @@ module.exports = async function seedDemoData() {
 
   const productCount = await Product.countDocuments({ user: user._id });
   if (productCount > 0) {
-    console.log('🪄 Demo data already present for user:', demoEmail);
+    console.log('🧩 Placeholder data already present for user:', placeholderEmail);
     return user;
   }
 
@@ -112,10 +112,10 @@ module.exports = async function seedDemoData() {
     },
   ]);
 
-  console.log('🪄 Demo data seeded for:', demoEmail);
-  console.log('🔐 Demo login credentials:');
-  console.log(`   Email: ${demoEmail}`);
-  console.log(`   Password: ${demoPassword}`);
+  console.log('🧩 Placeholder user data seeded for:', placeholderEmail);
+  console.log('🔐 Ready-to-use account:');
+  console.log(`   Email: ${placeholderEmail}`);
+  console.log(`   Password: ${placeholderPassword}`);
 
   return user;
 };
