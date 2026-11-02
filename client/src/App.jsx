@@ -23,6 +23,7 @@ import SupportPage from './pages/SupportPage';
 import AboutPage from './pages/AboutPage';
 import Settings from './pages/Settings';
 import Admin from './pages/Admin';
+import PublicHome from './pages/PublicHome';
 
 export default function App() {
   const { user } = useAuth();
@@ -32,8 +33,11 @@ export default function App() {
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Auth mode="login" />} />
       <Route path="/register" element={user ? <Navigate to="/" replace /> : <Auth mode="register" />} />
 
+      <Route path="/" element={user ? <ProtectedRoute><Layout /></ProtectedRoute> : <PublicHome />}>
+        <Route index element={<Dashboard />} />
+      </Route>
+
       <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-        <Route path="/" element={<Dashboard />} />
         <Route path="/products" element={<Products />} />
         <Route path="/products/add" element={<ProductAddPage />} />
         <Route path="/products/:id" element={<ProductDetail />} />

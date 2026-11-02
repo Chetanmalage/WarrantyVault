@@ -55,6 +55,7 @@ export default function Auth({ mode }) {
 
       <div className="auth-panel">
         <div className="auth-card">
+          <Link to="/" className="auth-back-link"><i className="bi bi-arrow-left" /> Back to sample vault</Link>
           <h3>{isLogin ? 'Welcome back' : 'Create your account'}</h3>
           <p className="text-muted mb-4">
             {isLogin ? 'Log in to access your warranty vault.' : 'Start organizing your warranties in seconds.'}
