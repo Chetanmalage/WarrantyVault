@@ -55,7 +55,7 @@ export default function Admin() {
     try {
       const { data } = await api.post('/admin/test-email');
       setFlash(data.delivered
-        ? `Test email sent to ${data.email} using ${data.provider}. Check your inbox and spam folder.`
+        ? `Test email sent to ${data.email} using ${data.provider}${data.fallbackUsed ? ' (fallback)' : ''}. Check your inbox and spam folder.`
         : `Email is still in preview mode; no message was sent. Configure ${data.provider} in Render first.`);
     } catch (e) {
       setFlash(e.response?.data?.message || 'Unable to send test email');
@@ -72,7 +72,9 @@ export default function Admin() {
             <p className="small mb-0 mt-1">
               Email delivery: <span className={`pill ${stats.emailDelivery?.configured ? 'ok' : 'warn'}`}>
                 {stats.emailDelivery?.configured
-                  ? `${stats.emailDelivery.provider === 'resend' ? 'Resend API' : 'SMTP'} configured`
+                  ? `${stats.emailDelivery.provider === 'resend'
+                    ? `Resend API${stats.emailDelivery.fallbackConfigured ? ' + SendGrid fallback' : ''}`
+                    : 'SMTP'} configured`
                   : `${stats.emailDelivery?.provider === 'resend' ? 'Resend API' : 'SMTP'} not configured`}
               </span>
             </p>
