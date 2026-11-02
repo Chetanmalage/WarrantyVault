@@ -9,6 +9,7 @@ export default function Settings() {
   const [days, setDays] = useState(user?.reminderDays ?? 30);
   const [saving, setSaving] = useState(false);
   const [flash, setFlash] = useState('');
+  const [flashType, setFlashType] = useState('success');
 
   const save = async (e) => {
     e.preventDefault();
@@ -17,8 +18,10 @@ export default function Settings() {
     try {
       await api.put('/auth/preferences', { emailReminders: enabled, reminderDays: Number(days) });
       await refresh();
+      setFlashType('success');
       setFlash('Preferences saved.');
     } catch (err) {
+      setFlashType('danger');
       setFlash(err.response?.data?.message || 'Failed to save preferences');
     } finally {
       setSaving(false);
@@ -28,26 +31,34 @@ export default function Settings() {
   return (
     <div className="d-grid gap-4" style={{ maxWidth: 720 }}>
       <div>
-        <h5 className="section-title mb-1">Email reminders</h5>
+        <span className="public-eyebrow">YOUR ACCOUNT</span>
+        <h5 className="section-title mt-2 mb-1">Email reminders</h5>
         <p className="text-muted small mb-0">
-          We'll send one email summary when a product first enters your selected expiry window. You won't get a repeat email every day for the same expiry date.
+          Get a thoughtful heads-up before a warranty expires. Choose the timing that works for you.
         </p>
       </div>
 
       <div className="card-surface">
-        {flash && <div className="alert alert-info py-2 small">{flash}</div>}
+        <div className="d-flex align-items-start gap-3 mb-4">
+          <span className="settings-mail-icon"><i className="bi bi-envelope-paper" /></span>
+          <div>
+            <h6 className="section-title mb-1">Stay ahead of expiry dates</h6>
+            <p className="small text-muted mb-0">We send one reminder when a product enters your chosen window—not a daily repeat for the same expiry.</p>
+          </div>
+        </div>
+        {flash && <div className={`alert alert-${flashType} py-2 small`} role="status">{flash}</div>}
         <form onSubmit={save} className="d-grid gap-3">
           <div className="form-check form-switch">
             <input className="form-check-input" type="checkbox" id="emailReminders"
               checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
-            <label className="form-check-label" htmlFor="emailReminders">
-              Email me warranty expiration notifications
-            </label>
+            <label className="form-check-label fw-semibold" htmlFor="emailReminders">Email me warranty reminders</label>
+            <div className="small text-muted ms-5">You can turn email reminders on or off whenever you like.</div>
           </div>
 
           <div>
-            <label className="form-label">Notify me when warranty expires within…</label>
+            <label className="form-label" htmlFor="reminderDays">Remind me before expiry</label>
             <select className="form-select" style={{ maxWidth: 220 }} value={days}
+              id="reminderDays"
               disabled={!enabled} onChange={(e) => setDays(e.target.value)}>
               <option value={7}>7 days</option>
               <option value={14}>14 days</option>
@@ -58,7 +69,7 @@ export default function Settings() {
           </div>
 
           <div>
-            <button className="btn btn-primary" disabled={saving}>
+            <button className="btn btn-primary" type="submit" disabled={saving}>
               {saving ? 'Saving…' : 'Save preferences'}
             </button>
           </div>

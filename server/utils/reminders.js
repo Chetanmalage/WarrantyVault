@@ -16,34 +16,59 @@ function formatWarrantyDate(value) {
 }
 
 function buildReminderHtml(user, items) {
-  const rows = items.map((product) => `
-    <tr>
-      <td style="padding:10px;border-bottom:1px solid #eee">
-        <strong>${escapeHtml(product.name)}</strong><br>
-        <small style="color:#64748b">${escapeHtml(product.brand || '—')} · ${escapeHtml(product.category || 'Other')}</small>
-      </td>
-      <td style="padding:10px;border-bottom:1px solid #eee">
-        ${escapeHtml(formatWarrantyDate(product.warrantyEnd))}
-      </td>
-      <td style="padding:10px;border-bottom:1px solid #eee;font-weight:600;color:${product.daysRemaining <= 7 ? '#dc2626' : '#b45309'}">
-        ${product.daysRemaining === 0 ? 'Expires today' : `${product.daysRemaining} day${product.daysRemaining === 1 ? '' : 's'} left`}
-      </td>
-    </tr>`).join('');
+  const rows = items.map((product) => {
+    const urgent = product.daysRemaining <= 7;
+    const remaining = product.daysRemaining === 0
+      ? 'Expires today'
+      : `${product.daysRemaining} day${product.daysRemaining === 1 ? '' : 's'} left`;
+    return `
+      <tr>
+        <td style="padding:16px 14px;border-bottom:1px solid #edf0f6">
+          <strong style="display:block;color:#20243a;font-size:14px">${escapeHtml(product.name)}</strong>
+          <span style="display:block;margin-top:4px;color:#798196;font-size:12px">${escapeHtml(product.brand || '—')} &middot; ${escapeHtml(product.category || 'Other')}</span>
+        </td>
+        <td style="padding:16px 10px;border-bottom:1px solid #edf0f6;color:#4b5267;font-size:12px;white-space:nowrap">
+          ${escapeHtml(formatWarrantyDate(product.warrantyEnd))}
+        </td>
+        <td style="padding:16px 10px;border-bottom:1px solid #edf0f6;text-align:right">
+          <span style="display:inline-block;padding:6px 9px;border-radius:20px;background:${urgent ? '#fff0ed' : '#fff6e5'};color:${urgent ? '#c65343' : '#a66a0a'};font-size:11px;font-weight:700;white-space:nowrap">${escapeHtml(remaining)}</span>
+        </td>
+      </tr>`;
+  }).join('');
   const appUrl = (process.env.APP_URL || '').trim();
   const appLink = /^https?:\/\//i.test(appUrl)
-    ? `<p style="margin:20px 0"><a href="${escapeHtml(appUrl)}" style="background:#2563eb;color:#fff;text-decoration:none;padding:11px 16px;border-radius:8px">Open WarrantyVault</a></p>`
+    ? `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:24px 0 0"><tr><td bgcolor="#6d5efc" style="border-radius:8px"><a href="${escapeHtml(appUrl)}" style="display:inline-block;padding:12px 18px;color:#fff;text-decoration:none;font-size:13px;font-weight:700">Open your warranty vault&nbsp; &rarr;</a></td></tr></table>`
     : '';
+  const reminderDays = Math.max(1, Math.min(90, Number(user.reminderDays) || 30));
 
   return `
-    <div style="font-family:Inter,Arial,sans-serif;max-width:640px;margin:auto;padding:24px;background:#f8fafc;border-radius:14px;color:#0f172a">
-      <h2 style="margin:0 0 8px">Hi ${escapeHtml(String(user.name || 'there').trim().split(/\s+/)[0])}, warranty reminder</h2>
-      <p style="color:#475569;margin:0 0 18px">${items.length} product warranty${items.length === 1 ? ' is' : 'ies are'} within your reminder window.</p>
-      <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;font-size:14px">
-        <thead><tr style="background:#f1f5f9;text-align:left"><th style="padding:10px">Product</th><th style="padding:10px">Expires</th><th style="padding:10px">Remaining</th></tr></thead>
-        <tbody>${rows}</tbody>
+    <div style="margin:0;padding:32px 12px;background:#f4f5fa;font-family:Arial,Helvetica,sans-serif;color:#20243a">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:620px;margin:0 auto;background:#fff;border:1px solid #e8eaf1;border-radius:14px;overflow:hidden">
+        <tr><td style="padding:24px 28px;background:#211d49;border-bottom:4px solid #6d5efc">
+          <span style="color:#fff;font-size:17px;font-weight:700;letter-spacing:-.3px">Warranty<span style="color:#bdb5ff">Vault</span></span>
+          <span style="float:right;padding:6px 9px;border:1px solid #514a7b;border-radius:20px;color:#d9d5fa;font-size:10px;font-weight:700;letter-spacing:.5px">WARRANTY UPDATE</span>
+        </td></tr>
+        <tr><td style="padding:28px 28px 12px">
+          <p style="margin:0 0 8px;color:#7770cb;font-size:11px;font-weight:700;letter-spacing:1px">A LITTLE HEADS-UP</p>
+          <h1 style="margin:0;color:#20243a;font-size:23px;line-height:1.3;letter-spacing:-.5px">Hi ${escapeHtml(String(user.name || 'there').trim().split(/\s+/)[0])}, your coverage deserves a check-in.</h1>
+          <p style="margin:10px 0 0;color:#697187;font-size:14px;line-height:1.65">${items.length} ${items.length === 1 ? 'warranty is' : 'warranties are'} coming up within your ${reminderDays}-day reminder window.</p>
+        </td></tr>
+        <tr><td style="padding:12px 28px 0">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border:1px solid #edf0f6;border-radius:10px;border-collapse:separate;border-spacing:0;overflow:hidden">
+            <thead><tr style="background:#f8f8fc;text-align:left">
+              <th style="padding:11px 14px;color:#747b91;font-size:10px;letter-spacing:.6px">PRODUCT</th>
+              <th style="padding:11px 10px;color:#747b91;font-size:10px;letter-spacing:.6px">EXPIRES</th>
+              <th style="padding:11px 10px;color:#747b91;font-size:10px;letter-spacing:.6px;text-align:right">STATUS</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+          ${appLink}
+        </td></tr>
+        <tr><td style="padding:24px 28px 22px">
+          <p style="margin:0;padding-top:17px;border-top:1px solid #edf0f6;color:#7b8294;font-size:11px;line-height:1.65">You’re receiving this one-time heads-up for products entering your reminder window. Adjust your email reminders any time in WarrantyVault settings.</p>
+          <p style="margin:12px 0 0;color:#9a9eab;font-size:10px">A little more peace of mind, one warranty at a time.</p>
+        </td></tr>
       </table>
-      ${appLink}
-      <p style="color:#64748b;font-size:12px;margin-top:18px">This is a one-time reminder for each product and expiry date. You can change your email reminder settings in WarrantyVault.</p>
     </div>`;
 }
 
@@ -54,7 +79,17 @@ function buildReminderText(user, items) {
     return `- ${product.name} (${product.brand || '—'}): ${expiry}, ${remaining}`;
   });
   const appUrl = (process.env.APP_URL || '').trim();
-  return [`Hi ${String(user.name || 'there').trim().split(/\s+/)[0]},`, '', 'Warranty reminder:', ...lines, '', /^https?:\/\//i.test(appUrl) ? `Open WarrantyVault: ${appUrl}` : '', 'This is a one-time reminder for each product and expiry date.'].filter(Boolean).join('\n');
+  const reminderDays = Math.max(1, Math.min(90, Number(user.reminderDays) || 30));
+  return [
+    `Hi ${String(user.name || 'there').trim().split(/\s+/)[0]},`,
+    '',
+    `${items.length} ${items.length === 1 ? 'warranty is' : 'warranties are'} coming up within your ${reminderDays}-day reminder window.`,
+    '',
+    ...lines,
+    '',
+    /^https?:\/\//i.test(appUrl) ? `Open your warranty vault: ${appUrl}` : '',
+    'This is a one-time heads-up for products entering your reminder window.',
+  ].filter(Boolean).join('\n');
 }
 
 function startOfToday(now = new Date(), timeZone = process.env.REMINDER_TIMEZONE || 'UTC') {
@@ -152,7 +187,7 @@ async function sendDueReminders() {
         continue;
       }
 
-      const subject = `Warranty reminder: ${items.length} product${items.length === 1 ? '' : 's'} expiring soon`;
+      const subject = `Warranty heads-up: ${items.length} product${items.length === 1 ? '' : 's'} coming up`;
       const mail = await sendMail({
         to: user.email,
         subject,

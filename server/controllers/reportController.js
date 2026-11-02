@@ -20,20 +20,36 @@ const fmtDate = (d) =>
 const fmtMoney = (n) => `Rs. ${Number(n || 0).toLocaleString('en-IN')}`;
 
 function drawHeader(doc, title, subtitle) {
-  doc.rect(0, 0, doc.page.width, 90).fill(BRAND);
-  doc.fillColor('#ffffff').fontSize(22).font('Helvetica-Bold').text('WarrantyVault', 40, 28);
-  doc.fontSize(10).font('Helvetica').text(title, 40, 58);
-  doc.fontSize(9).text(subtitle, 40, 30, { align: 'right', width: doc.page.width - 80 });
+  doc.rect(0, 0, doc.page.width, 104).fill('#211d49');
+  doc.rect(0, 101, doc.page.width, 3).fill(BRAND);
+  doc.fillColor('#c7c2ff').fontSize(8).font('Helvetica-Bold')
+    .text('WARRANTYVAULT  /  PERSONAL RECORD', 40, 18, { characterSpacing: 1 });
+  doc.fillColor('#ffffff').fontSize(20).font('Helvetica-Bold').text(title, 40, 38, {
+    width: doc.page.width - 80,
+    ellipsis: true,
+  });
+  doc.fillColor('#d2d0e4').fontSize(8).font('Helvetica')
+    .text(subtitle, 40, 72, { width: doc.page.width - 80, lineGap: 2 });
 }
 
 function drawFooter(doc) {
   const { start, count } = doc.bufferedPageRange();
   for (let i = start; i < start + count; i++) {
     doc.switchToPage(i);
+    const bottomMargin = doc.page.margins.bottom;
+    doc.page.margins.bottom = 0;
+    doc.moveTo(40, doc.page.height - 37).lineTo(doc.page.width - 40, doc.page.height - 37)
+      .strokeColor(LINE).stroke();
     doc.fillColor(MUTED).fontSize(8).font('Helvetica')
-      .text(`WarrantyVault • Page ${i + 1} of ${count}`, 40, doc.page.height - 25, {
-        align: 'center', width: doc.page.width - 80,
+      .text('WarrantyVault  ·  Your records, in one place', 40, doc.page.height - 27, {
+        width: doc.page.width - 150,
+        lineBreak: false,
+      })
+      .text(`Page ${i + 1} of ${count}`, 40, doc.page.height - 27, {
+        align: 'right', width: doc.page.width - 80,
+        lineBreak: false,
       });
+    doc.page.margins.bottom = bottomMargin;
   }
 }
 
@@ -70,22 +86,38 @@ exports.productsReport = async (req, res, next) => {
     let y = 110;
     stats.forEach((s, i) => {
       const x = 40 + i * (cardW + 10);
-      doc.roundedRect(x, y, cardW, 62, 10).fillAndStroke('#f8f9ff', LINE);
-      doc.fillColor(MUTED).fontSize(8).font('Helvetica-Bold').text(s.label, x + 12, y + 12, { width: cardW - 24 });
-      doc.fillColor(s.color).fontSize(22).font('Helvetica-Bold').text(String(s.value), x + 12, y + 28);
+      doc.roundedRect(x, y, cardW, 62, 10).fillAndStroke('#ffffff', LINE);
+      doc.roundedRect(x, y, 4, 62, 2).fill(s.color);
+      doc.fillColor(MUTED).fontSize(7).font('Helvetica-Bold')
+        .text(s.label, x + 12, y + 12, { width: cardW - 20, characterSpacing: .5 });
+      doc.fillColor(INK).fontSize(22).font('Helvetica-Bold').text(String(s.value), x + 12, y + 29);
     });
 
     y += 80;
     const purchaseSpend = products.reduce((s, p) => s + (p.purchasePrice || 0), 0);
     const serviceSpend = services.reduce((s, r) => s + (r.cost || 0), 0);
-    doc.fillColor(MUTED).fontSize(9).font('Helvetica')
-      .text(
-        `Purchase value ${fmtMoney(purchaseSpend)}   •   Service spend ${fmtMoney(serviceSpend)}   •   Documents ${docCount}   •   Service records ${services.length}`,
-        40, y, { width: doc.page.width - 80 }
-      );
+    const metrics = [
+      { label: 'PURCHASE VALUE', value: fmtMoney(purchaseSpend) },
+      { label: 'SERVICE SPEND', value: fmtMoney(serviceSpend) },
+      { label: 'RECORDS & DOCUMENTS', value: `${services.length} services  ·  ${docCount} files` },
+    ];
+    const metricGap = 10;
+    const metricW = (doc.page.width - 80 - metricGap * 2) / 3;
+    metrics.forEach((metric, i) => {
+      const x = 40 + i * (metricW + metricGap);
+      doc.roundedRect(x, y, metricW, 49, 9).fillAndStroke('#f8f9ff', LINE);
+      doc.fillColor(MUTED).fontSize(7).font('Helvetica-Bold')
+        .text(metric.label, x + 11, y + 10, { width: metricW - 22, characterSpacing: .4 });
+      doc.fillColor(INK).fontSize(10).font('Helvetica-Bold')
+        .text(metric.value, x + 11, y + 25, { width: metricW - 22, ellipsis: true });
+    });
 
-    y += 30;
-    doc.fillColor(INK).fontSize(13).font('Helvetica-Bold').text('Products', 40, y);
+    y += 72;
+    doc.fillColor(INK).fontSize(13).font('Helvetica-Bold').text('Product warranties', 40, y);
+    doc.fillColor(MUTED).fontSize(8).font('Helvetica')
+      .text(`${products.length} ${products.length === 1 ? 'product' : 'products'} in your vault`, 40, y + 2, {
+        align: 'right', width: doc.page.width - 80,
+      });
     y += 22;
 
     const COLS = [
@@ -97,9 +129,10 @@ exports.productsReport = async (req, res, next) => {
     ];
 
     const drawTableHeader = () => {
-      doc.rect(40, y, doc.page.width - 80, 22).fill('#f1f3fa');
+      doc.roundedRect(40, y, doc.page.width - 80, 22, 4).fill('#f1efff');
       COLS.forEach((c) =>
-        doc.fillColor(MUTED).fontSize(8).font('Helvetica-Bold').text(c.label, c.x + 6, y + 7, { width: c.w })
+        doc.fillColor('#6259a9').fontSize(7).font('Helvetica-Bold')
+          .text(c.label, c.x + 6, y + 7, { width: c.w, characterSpacing: .3 })
       );
       y += 22;
     };
@@ -110,9 +143,10 @@ exports.productsReport = async (req, res, next) => {
       y += 30;
     }
 
-    products.forEach((p) => {
+    products.forEach((p, index) => {
       if (y > doc.page.height - 80) { doc.addPage(); y = 40; drawTableHeader(); }
 
+      if (index % 2 === 1) doc.rect(40, y, doc.page.width - 80, 32).fill('#fbfbfe');
       doc.fillColor(INK).fontSize(9).font('Helvetica-Bold')
         .text(p.name, 46, y + 6, { width: 194, ellipsis: true });
       doc.fillColor(MUTED).fontSize(8).font('Helvetica')

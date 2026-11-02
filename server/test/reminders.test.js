@@ -38,6 +38,29 @@ test('expiry-day reminders use clear zero-day wording in HTML and text', () => {
   assert.ok(buildReminderText({ name: 'User' }, [product]).includes('expires today'));
 });
 
+test('reminder email uses the configured window and branded product summary', () => {
+  const html = buildReminderHtml(
+    { name: 'Taylor', reminderDays: 14 },
+    [{
+      name: 'Camera',
+      brand: 'Example',
+      category: 'Camera',
+      warrantyEnd: '2026-11-12T00:00:00.000Z',
+      daysRemaining: 10,
+    }]
+  );
+  assert.ok(html.includes('WARRANTY UPDATE'));
+  assert.ok(html.includes('14-day reminder window'));
+  assert.ok(html.includes('Camera'));
+  assert.ok(html.includes('10 days left'));
+  assert.ok(buildReminderText({ name: 'Taylor', reminderDays: 14 }, [{
+    name: 'Camera',
+    brand: 'Example',
+    warrantyEnd: '2026-11-12T00:00:00.000Z',
+    daysRemaining: 10,
+  }]).includes('14-day reminder window'));
+});
+
 test('reminder link only accepts HTTP(S) application URLs', () => {
   const original = process.env.APP_URL;
   try {
