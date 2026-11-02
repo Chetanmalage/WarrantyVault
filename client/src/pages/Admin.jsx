@@ -42,10 +42,23 @@ export default function Admin() {
     setBusy(true); setFlash('');
     try {
       const { data } = await api.post('/admin/send-reminders');
-      const smtpNote = data.emailConfigured ? '' : ' SMTP is not configured; previewed emails were not delivered.';
+      const smtpNote = data.emailConfigured ? '' : ' Email delivery is not configured; previewed emails were not delivered.';
       setFlash(`Reminder run finished — ${data.emailsSent} sent, ${data.emailsPreviewed} previewed, ${data.skipped} skipped, ${data.failed} failed.${smtpNote}`);
     } catch (e) {
       setFlash(e.response?.data?.message || 'Failed to send reminders');
+    } finally { setBusy(false); }
+  };
+
+  const sendTestEmail = async () => {
+    setBusy(true);
+    setFlash('');
+    try {
+      const { data } = await api.post('/admin/test-email');
+      setFlash(data.delivered
+        ? `Test email sent to ${data.email} using ${data.provider}. Check your inbox and spam folder.`
+        : `Email is still in preview mode; no message was sent. Configure ${data.provider} in Render first.`);
+    } catch (e) {
+      setFlash(e.response?.data?.message || 'Unable to send test email');
     } finally { setBusy(false); }
   };
 
@@ -58,14 +71,21 @@ export default function Admin() {
           {stats && (
             <p className="small mb-0 mt-1">
               Email delivery: <span className={`pill ${stats.emailDelivery?.configured ? 'ok' : 'warn'}`}>
-                {stats.emailDelivery?.configured ? 'SMTP configured' : 'SMTP not configured'}
+                {stats.emailDelivery?.configured
+                  ? `${stats.emailDelivery.provider === 'resend' ? 'Resend API' : 'SMTP'} configured`
+                  : `${stats.emailDelivery?.provider === 'resend' ? 'Resend API' : 'SMTP'} not configured`}
               </span>
             </p>
           )}
         </div>
-        <button className="btn btn-primary btn-sm" onClick={triggerReminders} disabled={busy}>
-          <i className="bi bi-send me-1" />{busy ? 'Sending…' : 'Send reminders now'}
-        </button>
+        <div className="d-flex flex-wrap gap-2">
+          <button className="btn btn-soft btn-sm" onClick={sendTestEmail} disabled={busy}>
+            <i className="bi bi-envelope-check me-1" />{busy ? 'Sending…' : 'Send test email to me'}
+          </button>
+          <button className="btn btn-primary btn-sm" onClick={triggerReminders} disabled={busy}>
+            <i className="bi bi-send me-1" />{busy ? 'Sending…' : 'Send reminders now'}
+          </button>
+        </div>
       </div>
 
       {flash && <div className="alert alert-info py-2 small mb-0">{flash}</div>}

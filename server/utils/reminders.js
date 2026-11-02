@@ -92,6 +92,41 @@ function buildReminderText(user, items) {
   ].filter(Boolean).join('\n');
 }
 
+function buildTestEmailHtml(user) {
+  const appUrl = (process.env.APP_URL || '').trim();
+  const appLink = /^https?:\/\//i.test(appUrl)
+    ? `<p style="margin:24px 0 0"><a href="${escapeHtml(appUrl)}" style="display:inline-block;padding:12px 18px;border-radius:8px;background:#6d5efc;color:#fff;text-decoration:none;font-size:13px;font-weight:700">Open your warranty vault</a></p>`
+    : '';
+  return `
+    <div style="margin:0;padding:32px 12px;background:#f4f5fa;font-family:Arial,Helvetica,sans-serif;color:#20243a">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e8eaf1;border-radius:14px;overflow:hidden">
+        <tr><td style="padding:24px 28px;background:#211d49;border-bottom:4px solid #6d5efc">
+          <span style="color:#fff;font-size:17px;font-weight:700">Warranty<span style="color:#bdb5ff">Vault</span></span>
+          <span style="float:right;padding:6px 9px;border:1px solid #514a7b;border-radius:20px;color:#d9d5fa;font-size:10px;font-weight:700;letter-spacing:.5px">EMAIL TEST</span>
+        </td></tr>
+        <tr><td style="padding:30px 28px">
+          <p style="margin:0 0 8px;color:#7770cb;font-size:11px;font-weight:700;letter-spacing:1px">DELIVERY CONFIRMED</p>
+          <h1 style="margin:0;color:#20243a;font-size:23px;line-height:1.3">Your email is connected.</h1>
+          <p style="margin:12px 0 0;color:#697187;font-size:14px;line-height:1.7">Hi ${escapeHtml(String(user.name || 'there').trim().split(/\s+/)[0])}, this test confirms WarrantyVault successfully delivered an email to your account address.</p>
+          ${appLink}
+        </td></tr>
+        <tr><td style="padding:0 28px 22px;color:#9a9eab;font-size:10px">A little more peace of mind, one warranty at a time.</td></tr>
+      </table>
+    </div>`;
+}
+
+function buildTestEmailText(user) {
+  const appUrl = (process.env.APP_URL || '').trim();
+  return [
+    `Hi ${String(user.name || 'there').trim().split(/\s+/)[0]},`,
+    '',
+    'This test confirms WarrantyVault successfully delivered an email to your account address.',
+    '',
+    /^https?:\/\//i.test(appUrl) ? `Open your warranty vault: ${appUrl}` : '',
+    'A little more peace of mind, one warranty at a time.',
+  ].filter(Boolean).join('\n');
+}
+
 function startOfToday(now = new Date(), timeZone = process.env.REMINDER_TIMEZONE || 'UTC') {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone, year: 'numeric', month: '2-digit', day: '2-digit',
@@ -218,4 +253,12 @@ async function sendDueReminders() {
   return result;
 }
 
-module.exports = { buildReminderHtml, buildReminderText, formatWarrantyDate, sendDueReminders, startOfToday };
+module.exports = {
+  buildReminderHtml,
+  buildReminderText,
+  buildTestEmailHtml,
+  buildTestEmailText,
+  formatWarrantyDate,
+  sendDueReminders,
+  startOfToday,
+};

@@ -11,8 +11,8 @@ const ServiceRecord = require('../models/ServiceRecord');
 const Document = require('../models/Document');
 const ReminderDelivery = require('../models/ReminderDelivery');
 const ReminderRun = require('../models/ReminderRun');
-const { sendDueReminders } = require('../utils/reminders');
-const { getMailStatus } = require('../utils/mailer');
+const { buildTestEmailHtml, buildTestEmailText, sendDueReminders } = require('../utils/reminders');
+const { getMailStatus, sendMail } = require('../utils/mailer');
 
 router.use(protect, requireAdmin);
 
@@ -105,6 +105,23 @@ router.post('/send-reminders', async (req, res, next) => {
   try {
     const result = await sendDueReminders();
     res.json(result);
+  } catch (err) { next(err); }
+});
+
+router.post('/test-email', async (req, res, next) => {
+  try {
+    const result = await sendMail({
+      to: req.user.email,
+      subject: 'WarrantyVault email delivery test',
+      html: buildTestEmailHtml(req.user),
+      text: buildTestEmailText(req.user),
+    });
+    res.json({
+      delivered: result.delivered,
+      preview: result.preview || false,
+      email: req.user.email,
+      provider: getMailStatus().provider,
+    });
   } catch (err) { next(err); }
 });
 

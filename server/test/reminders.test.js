@@ -4,7 +4,14 @@ const User = require('../models/User');
 const Product = require('../models/Product');
 const ReminderDelivery = require('../models/ReminderDelivery');
 const ReminderRun = require('../models/ReminderRun');
-const { buildReminderHtml, buildReminderText, formatWarrantyDate, startOfToday } = require('../utils/reminders');
+const {
+  buildReminderHtml,
+  buildReminderText,
+  buildTestEmailHtml,
+  buildTestEmailText,
+  formatWarrantyDate,
+  startOfToday,
+} = require('../utils/reminders');
 const { getMailStatus, sendMail } = require('../utils/mailer');
 const { startReminderScheduler } = require('../utils/reminderScheduler');
 const { updatePreferences } = require('../controllers/authController');
@@ -59,6 +66,14 @@ test('reminder email uses the configured window and branded product summary', ()
     warrantyEnd: '2026-11-12T00:00:00.000Z',
     daysRemaining: 10,
   }]).includes('14-day reminder window'));
+});
+
+test('test email escapes account names and confirms delivery without exposing secrets', () => {
+  const html = buildTestEmailHtml({ name: '<Taylor>' });
+  assert.ok(html.includes('Hi &lt;Taylor&gt;'));
+  assert.ok(html.includes('Your email is connected.'));
+  assert.ok(!html.includes('Hi <Taylor>'));
+  assert.ok(buildTestEmailText({ name: 'Taylor' }).includes('successfully delivered'));
 });
 
 test('reminder link only accepts HTTP(S) application URLs', () => {
