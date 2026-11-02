@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -11,7 +11,11 @@ export default function Auth({ mode }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+  useEffect(() => {
+    document.title = `${isLogin ? 'Log in' : 'Create account'} | WarrantyVault`;
+  }, [isLogin]);
+
+  const set = (k) => (e) => setForm((current) => ({ ...current, [k]: e.target.value }));
 
   const submit = async (e) => {
     e.preventDefault();
@@ -61,22 +65,22 @@ export default function Auth({ mode }) {
             {isLogin ? 'Log in to access your warranty vault.' : 'Start organizing your warranties in seconds.'}
           </p>
 
-          {error && <div className="alert alert-danger py-2 small">{error}</div>}
+          {error && <div id="auth-error" className="alert alert-danger py-2 small" role="alert">{error}</div>}
 
           <form onSubmit={submit} className="d-grid gap-3">
             {!isLogin && (
               <div>
-                <label className="form-label">Full name</label>
-                <input className="form-control" value={form.name} onChange={set('name')} required placeholder="Your name" />
+                <label className="form-label" htmlFor="auth-name">Full name</label>
+                <input id="auth-name" name="name" autoComplete="name" className="form-control" value={form.name} onChange={set('name')} required placeholder="Your name" />
               </div>
             )}
             <div>
-              <label className="form-label">Email address</label>
-              <input type="email" className="form-control" value={form.email} onChange={set('email')} required placeholder="you@example.com" />
+              <label className="form-label" htmlFor="auth-email">Email address</label>
+              <input id="auth-email" name="email" type="email" autoComplete="email" className="form-control" value={form.email} onChange={set('email')} required placeholder="you@example.com" aria-describedby={error ? 'auth-error' : undefined} />
             </div>
             <div>
-              <label className="form-label">Password</label>
-              <input type="password" className="form-control" value={form.password} onChange={set('password')} required minLength={6} placeholder="At least 6 characters" />
+              <label className="form-label" htmlFor="auth-password">Password</label>
+              <input id="auth-password" name="password" type="password" autoComplete={isLogin ? 'current-password' : 'new-password'} className="form-control" value={form.password} onChange={set('password')} required minLength={6} placeholder="At least 6 characters" aria-describedby={error ? 'auth-error' : undefined} />
             </div>
             <button className="btn btn-primary w-100 py-2 mt-1" disabled={loading}>
               {loading ? 'Please wait...' : isLogin ? 'Log in' : 'Create account'}

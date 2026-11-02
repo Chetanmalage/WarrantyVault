@@ -24,6 +24,7 @@ import AboutPage from './pages/AboutPage';
 import Settings from './pages/Settings';
 import Admin from './pages/Admin';
 import PublicHome from './pages/PublicHome';
+import NotFound from './pages/NotFound';
 
 export default function App() {
   const { user } = useAuth();
@@ -58,7 +59,7 @@ export default function App() {
         <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 const samples = [
@@ -8,8 +9,7 @@ const samples = [
     icon: 'bi-phone',
     status: 'Active',
     statusClass: 'active',
-    time: '45 days left',
-    date: 'Ends in 45 days',
+    daysRemaining: 45,
   },
   {
     name: 'Dell XPS 13',
@@ -18,8 +18,7 @@ const samples = [
     icon: 'bi-laptop',
     status: 'Expired',
     statusClass: 'expired',
-    time: 'Expired 10 days ago',
-    date: 'Ended 10 days ago',
+    daysRemaining: -10,
   },
   {
     name: 'Samsung 4K Smart TV',
@@ -28,8 +27,7 @@ const samples = [
     icon: 'bi-tv',
     status: 'Active',
     statusClass: 'active',
-    time: '90 days left',
-    date: 'Ends in 90 days',
+    daysRemaining: 90,
   },
 ];
 
@@ -42,7 +40,30 @@ function Brand() {
   );
 }
 
+function formatSampleExpiry(daysRemaining) {
+  const expiry = new Date();
+  expiry.setDate(expiry.getDate() + daysRemaining);
+  const formattedDate = new Intl.DateTimeFormat(undefined, {
+    month: 'short', day: 'numeric', year: 'numeric',
+  }).format(expiry);
+
+  return daysRemaining < 0 ? `Ended ${formattedDate}` : `Ends ${formattedDate}`;
+}
+
+function formatSampleCountdown(daysRemaining) {
+  if (daysRemaining < 0) {
+    const daysExpired = Math.abs(daysRemaining);
+    return `Expired ${daysExpired} ${daysExpired === 1 ? 'day' : 'days'} ago`;
+  }
+
+  return daysRemaining === 0 ? 'Expires today' : `${daysRemaining} days left`;
+}
+
 export default function PublicHome() {
+  useEffect(() => {
+    document.title = 'WarrantyVault — Digital Warranty Manager';
+  }, []);
+
   return (
     <div className="public-page">
       <header className="public-header">
@@ -158,11 +179,11 @@ export default function PublicHome() {
                   <p className="public-sample-brand">{sample.brand}</p>
                   <div className="public-sample-date">
                     <i className="bi bi-calendar-check" />
-                    <span><small>Warranty</small><strong>{sample.date}</strong></span>
+                    <span><small>Warranty</small><strong>{formatSampleExpiry(sample.daysRemaining)}</strong></span>
                   </div>
                   <div className={`public-sample-countdown ${sample.statusClass}`}>
                     <i className={`bi ${sample.statusClass === 'expired' ? 'bi-exclamation-circle' : 'bi-clock'}`} />
-                    {sample.time}
+                    {formatSampleCountdown(sample.daysRemaining)}
                   </div>
                 </article>
               ))}

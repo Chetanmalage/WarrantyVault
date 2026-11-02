@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -56,9 +56,13 @@ export default function Layout() {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
 
+  useEffect(() => {
+    document.title = `${title} | WarrantyVault`;
+  }, [title]);
+
   return (
     <div className="app-shell">
-      {open && <div className="sidebar-backdrop" onClick={() => setOpen(false)} />}
+      {open && <button className="sidebar-backdrop" type="button" onClick={() => setOpen(false)} aria-label="Close navigation menu" />}
 
       <aside className={`sidebar ${open ? 'open' : ''}`}>
         <div className="brand">
@@ -69,7 +73,7 @@ export default function Layout() {
           </div>
         </div>
 
-        <nav className="nav-list">
+        <nav id="primary-navigation" className="nav-list" aria-label="Primary navigation">
           {nav.map((item) => (
             <NavLink
               key={item.to}
@@ -103,8 +107,8 @@ export default function Layout() {
 
       <div className="main-area">
         <header className="topbar">
-          <button className="icon-btn d-lg-none" onClick={() => setOpen(true)} aria-label="Menu">
-            <i className="bi bi-list" />
+          <button className="icon-btn d-lg-none" onClick={() => setOpen((current) => !current)} aria-label={open ? 'Close menu' : 'Open menu'} aria-expanded={open} aria-controls="primary-navigation">
+            <i className={`bi ${open ? 'bi-x-lg' : 'bi-list'}`} aria-hidden="true" />
           </button>
           <div className="flex-grow-1 min-w-0">
             <h1 className="page-title text-truncate">{title}</h1>
@@ -119,6 +123,7 @@ export default function Layout() {
           <button
             className="theme-toggle"
             onClick={toggle}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             <i className={`bi ${theme === 'dark' ? 'bi-sun' : 'bi-moon-stars'}`} />
