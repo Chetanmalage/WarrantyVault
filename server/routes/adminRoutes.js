@@ -120,7 +120,8 @@ router.post('/test-email', async (req, res, next) => {
       delivered: result.delivered,
       preview: result.preview || false,
       email: req.user.email,
-      provider: getMailStatus().provider,
+      provider: result.provider || getMailStatus().provider,
+      fallbackUsed: result.fallbackUsed || false,
     });
   } catch (err) { next(err); }
 });
