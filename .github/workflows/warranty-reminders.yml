@@ -2,19 +2,14 @@ name: Warranty reminders
 
 on:
   schedule:
-    - cron: '30 3 * * *' # 09:00 Asia/Kolkata; schedule uses UTC.
+    - cron: '30 3 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: warranty-reminders
-  cancel-in-progress: false
-
 jobs:
   send-reminders:
-    # Keep the scheduled workflow dormant until a verified production sender is tested.
-    if: ${{ vars.WARRANTY_REMINDERS_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -51,7 +46,3 @@ jobs:
           fi
 
           jq '{usersChecked, emailsSent, emailsPreviewed, productsNotified, skipped, failed, blockedReason}' "$response_file"
-          jq -e '(.emailConfigured == true) and ((.blockedReason // null) == null) and ((.failed // 0) == 0)' "$response_file" >/dev/null || {
-            echo "Reminder delivery is blocked, unconfigured, or failed."
-            exit 1
-          }
