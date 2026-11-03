@@ -18,14 +18,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Trigger protected reminder endpoint
+            - name: Trigger protected reminder endpoint
         shell: bash
         env:
           REMINDER_CRON_SECRET: ${{ secrets.REMINDER_CRON_SECRET }}
+          REMINDER_API_URL: ${{ vars.REMINDER_API_URL }}
         run: |
           set -euo pipefail
           if [[ -z "${REMINDER_CRON_SECRET:-}" ]]; then
             echo "The REMINDER_CRON_SECRET Actions secret is not configured."
+            exit 1
+          fi
+          if [[ -z "${REMINDER_API_URL:-}" ]]; then
+            echo "The REMINDER_API_URL Actions variable is not configured."
             exit 1
           fi
 
@@ -38,7 +43,7 @@ jobs:
             --request POST \
             --header "Authorization: Bearer ${REMINDER_CRON_SECRET}" \
             --header 'Accept: application/json' \
-            'https://warrantyvault-16et.onrender.com/api/internal/reminders')"
+            "${REMINDER_API_URL}")"
 
           if [[ "$status" != "200" ]]; then
             echo "Reminder endpoint returned HTTP ${status}."
