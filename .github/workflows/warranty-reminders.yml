@@ -1,0 +1,52 @@
+name: Warranty reminders
+
+on:
+  schedule:
+    - cron: '30 3 * * *' # 09:00 Asia/Kolkata; schedule uses UTC.
+
+permissions:
+  contents: read
+
+concurrency:
+  group: warranty-reminders
+  cancel-in-progress: false
+
+jobs:
+  send-reminders:
+    # Keep the scheduled workflow dormant until a verified production sender is tested.
+    if: ${{ vars.WARRANTY_REMINDERS_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger protected reminder endpoint
+        shell: bash
+        env:
+          REMINDER_CRON_SECRET: ${{ secrets.REMINDER_CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${REMINDER_CRON_SECRET:-}" ]]; then
+            echo "The REMINDER_CRON_SECRET Actions secret is not configured."
+            exit 1
+          fi
+
+          response_file="$(mktemp)"
+          trap 'rm -f "$response_file"' EXIT
+          status="$(curl --silent --show-error \
+            --output "$response_file" \
+            --write-out '%{http_code}' \
+            --max-time 240 \
+            --request POST \
+            --header "Authorization: Bearer ${REMINDER_CRON_SECRET}" \
+            --header 'Accept: application/json' \
+            'https://warrantyvault-16et.onrender.com/api/internal/reminders')"
+
+          if [[ "$status" != "200" ]]; then
+            echo "Reminder endpoint returned HTTP ${status}."
+            exit 1
+          fi
+
+          jq '{usersChecked, emailsSent, emailsPreviewed, productsNotified, skipped, failed, blockedReason}' "$response_file"
+          jq -e '(.emailConfigured == true) and ((.blockedReason // null) == null) and ((.failed // 0) == 0)' "$response_file" >/dev/null || {
+            echo "Reminder delivery is blocked, unconfigured, or failed."
+            exit 1
+          }
