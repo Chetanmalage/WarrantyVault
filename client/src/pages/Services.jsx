@@ -41,8 +41,8 @@ export default function Services() {
           <h5 className="section-title mb-1">All service records</h5>
           <p className="text-muted small mb-0">{items.length} records · total spend {money(total)}</p>
         </div>
-        <Link to="/products" className="btn btn-soft btn-sm">
-          <i className="bi bi-plus-lg me-1" />Add via product page
+        <Link to="/services/add" className="btn btn-primary btn-sm">
+          <i className="bi bi-plus-lg me-1" />Add service record
         </Link>
       </div>
 

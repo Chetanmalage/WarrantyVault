@@ -48,7 +48,11 @@ async function startServer() {
   await connectDB();
   await Promise.all([ReminderDelivery.createIndexes(), ReminderRun.createIndexes()]);
   await seedAdmin();
-  startReminderScheduler();
+  if ((process.env.REMINDER_SCHEDULER_ENABLED || 'true').trim().toLowerCase() === 'false') {
+    console.log('In-process reminder scheduler disabled; use the dedicated scheduled job.');
+  } else {
+    startReminderScheduler();
+  }
   app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
 }
 

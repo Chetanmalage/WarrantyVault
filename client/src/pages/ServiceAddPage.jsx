@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 
 const empty = {
@@ -14,11 +14,16 @@ const empty = {
 export default function ServiceAddPage() {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [productsError, setProductsError] = useState('');
   const [form, setForm] = useState(empty);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    api.get('/products').then(({ data }) => setProducts(data)).catch(() => setProducts([]));
+    api.get('/products')
+      .then(({ data }) => setProducts(data))
+      .catch((err) => setProductsError(err.response?.data?.message || 'Unable to load products'))
+      .finally(() => setProductsLoading(false));
   }, []);
 
   const submit = async (event) => {
@@ -43,10 +48,17 @@ export default function ServiceAddPage() {
         </div>
       </div>
 
+      {productsError && <div className="alert alert-danger" role="alert">{productsError}</div>}
+      {!productsLoading && !productsError && products.length === 0 && (
+        <div className="alert alert-info" role="status">
+          Add a product before recording a service visit. <Link to="/products/add">Add a product</Link>.
+        </div>
+      )}
+
       <form onSubmit={submit} className="row g-3">
         <div className="col-md-6">
           <label className="form-label">Product *</label>
-          <select className="form-select" value={form.product} onChange={(e) => setForm({ ...form, product: e.target.value })} required>
+          <select className="form-select" value={form.product} onChange={(e) => setForm({ ...form, product: e.target.value })} required disabled={productsLoading || Boolean(productsError) || products.length === 0}>
             <option value="">Choose a product</option>
             {products.map((product) => (
               <option key={product._id} value={product._id}>{product.name}</option>

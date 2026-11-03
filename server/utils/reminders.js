@@ -143,13 +143,8 @@ async function removePendingClaims(runId, deliveryIds) {
 }
 
 async function sendDueReminders() {
-  const staleBefore = new Date(Date.now() - PENDING_STALE_MS);
-  await Promise.all([
-    ReminderDelivery.deleteMany({ status: 'pending', createdAt: { $lt: staleBefore } }),
-    ReminderRun.deleteMany({ status: 'pending', createdAt: { $lt: staleBefore } }),
-  ]);
-
   const users = await User.find({ emailReminders: true });
+  const mailStatus = getMailStatus();
   const result = {
     usersChecked: users.length,
     emailsSent: 0,
@@ -157,8 +152,20 @@ async function sendDueReminders() {
     productsNotified: 0,
     skipped: 0,
     failed: 0,
-    emailConfigured: getMailStatus().configured,
+    emailConfigured: mailStatus.configured,
   };
+
+  if (mailStatus.testOnlySender) {
+    result.skipped = users.length;
+    result.blockedReason = 'resend_test_sender';
+    return result;
+  }
+
+  const staleBefore = new Date(Date.now() - PENDING_STALE_MS);
+  await Promise.all([
+    ReminderDelivery.deleteMany({ status: 'pending', createdAt: { $lt: staleBefore } }),
+    ReminderRun.deleteMany({ status: 'pending', createdAt: { $lt: staleBefore } }),
+  ]);
 
   for (const user of users) {
     const thresholdDays = Math.max(1, Math.min(90, Number(user.reminderDays) || 30));

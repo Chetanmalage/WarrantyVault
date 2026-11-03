@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import { date, daysLabel } from '../utils/format';
+import { getUpcomingWarrantyEvents } from '../utils/warrantyCalendar';
 
 export default function CalendarPage() {
   const [products, setProducts] = useState([]);
@@ -15,10 +16,7 @@ export default function CalendarPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const upcoming = useMemo(
-    () => [...products].filter((p) => p.warrantyEnd).sort((a, b) => new Date(a.warrantyEnd) - new Date(b.warrantyEnd)),
-    [products]
-  );
+  const upcoming = useMemo(() => getUpcomingWarrantyEvents(products), [products]);
 
   if (loading) return <div className="app-loader"><div className="spinner" /></div>;
   if (error) return <div className="alert alert-danger">{error}</div>;

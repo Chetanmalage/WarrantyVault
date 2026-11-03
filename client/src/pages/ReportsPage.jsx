@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import api from '../api/axios';
 import { date, money } from '../utils/format';
 import { downloadAuthenticatedFile } from '../utils/download';
@@ -7,29 +7,46 @@ export default function ReportsPage() {
   const [dashboard, setDashboard] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [downloadError, setDownloadError] = useState('');
 
-  useEffect(() => {
-    Promise.all([
-      api.get('/dashboard'),
-      api.get('/products'),
-    ])
-      .then(([dash, prod]) => {
-        setDashboard(dash.data);
-        setProducts(prod.data);
-      })
-      .catch((err) => alert(err.response?.data?.message || 'Unable to load analytics'))
-      .finally(() => setLoading(false));
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [dash, prod] = await Promise.all([
+        api.get('/dashboard'),
+        api.get('/products'),
+      ]);
+      setDashboard(dash.data);
+      setProducts(prod.data);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Unable to load analytics. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => { load(); }, [load]);
+
   const downloadPdf = async () => {
+    setDownloadError('');
     try {
       await downloadAuthenticatedFile('/reports/products.pdf', 'warrantyvault-analytics.pdf');
     } catch (err) {
-      alert(err.response?.data?.message || 'Unable to download analytics');
+      setDownloadError(err.response?.data?.message || 'Unable to download analytics. Please try again.');
     }
   };
 
-  if (loading || !dashboard) return <div className="app-loader"><div className="spinner" /></div>;
+  if (loading) return <div className="app-loader"><div className="spinner" /></div>;
+  if (error || !dashboard) {
+    return (
+      <div className="alert alert-danger" role="alert">
+        <p className="mb-2">{error || 'Analytics could not be loaded.'}</p>
+        <button className="btn btn-sm btn-soft" onClick={load}>Try again</button>
+      </div>
+    );
+  }
 
   const { totals, totalProductSpend, totalServiceSpend, categoryBreakdown } = dashboard;
 
@@ -44,6 +61,7 @@ export default function ReportsPage() {
           <i className="bi bi-file-earmark-pdf me-1" />Download PDF
         </button>
       </div>
+      {downloadError && <div className="alert alert-danger py-2 small mb-0" role="alert">{downloadError}</div>}
 
       <div className="stat-grid">
         <div className="stat-card tone-primary">
