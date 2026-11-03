@@ -27,7 +27,7 @@ productSchema.virtual('daysRemaining').get(function () {
   const end = new Date(this.warrantyEnd);
   const expiryDay = Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate());
   const today = new Date();
-  const currentDay = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+  const currentDay = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
   return Math.round((expiryDay - currentDay) / 86400000);
 });
 

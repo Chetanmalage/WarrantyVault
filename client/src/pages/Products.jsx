@@ -180,6 +180,7 @@ export default function Products() {
         title={editing ? 'Edit product' : 'Add new product'}
         onClose={() => { setModalOpen(false); setEditing(null); }}
         wide
+        closeOnBackdrop={false}
       >
         <ProductForm
           initial={editing}

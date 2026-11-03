@@ -16,7 +16,11 @@ const statusBg = (s) => (s === 'active' ? '#d1fae5' : s === 'expiring' ? '#fef3c
 const statusLabel = (s) => (s === 'active' ? 'Active' : s === 'expiring' ? 'Expiring' : 'Expired');
 
 const fmtDate = (d) =>
-  d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+  d
+    ? new Date(d).toLocaleDateString('en-GB', {
+        day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC',
+      })
+    : '—';
 const fmtMoney = (n) => `Rs. ${Number(n || 0).toLocaleString('en-IN')}`;
 
 function drawHeader(doc, title, subtitle) {

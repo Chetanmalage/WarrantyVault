@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import api from '../api/axios';
 import Modal from '../components/Modal';
 import ProductForm from '../components/ProductForm';
+import ProductPhoto from '../components/ProductPhoto';
 import StatusBadge from '../components/StatusBadge';
 import { date, daysLabel, money, warrantyProgress } from '../utils/format';
 import { downloadAuthenticatedFile } from '../utils/download';
@@ -33,6 +34,9 @@ export default function ProductDetail() {
   const [docType, setDocType] = useState('Invoice');
   const [docFile, setDocFile] = useState(null);
   const [docBusy, setDocBusy] = useState(false);
+
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoKey, setPhotoKey] = useState(0);
 
   const load = useCallback(async () => {
     try {
@@ -146,6 +150,40 @@ export default function ProductDetail() {
     catch (e) { alert(e.response?.data?.message || 'Could not download document'); }
   };
 
+  const uploadPhoto = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('photo', file);
+    setPhotoBusy(true);
+    try {
+      await api.post(`/products/${product._id}/photo`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      await load();
+      setPhotoKey((k) => k + 1);
+      e.target.value = '';
+    } catch (err) {
+      alert(err.response?.data?.message || 'Could not upload photo');
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  const removePhoto = async () => {
+    if (!window.confirm('Remove this product photo?')) return;
+    setPhotoBusy(true);
+    try {
+      await api.delete(`/products/${product._id}/photo`);
+      await load();
+      setPhotoKey((k) => k + 1);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Could not remove photo');
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
   return (
     <div className="d-grid gap-4">
       <Link to="/products" className="small text-decoration-none fw-semibold">
@@ -204,6 +242,54 @@ export default function ProductDetail() {
             {product.coverageDetails && <p className="mb-0 small"><strong>Coverage:</strong> {product.coverageDetails}</p>}
           </div>
         )}
+      </div>
+
+      {/* Photo */}
+      <div className="card-surface">
+        <h5 className="section-title mb-3">Product photo</h5>
+        <div className="row g-3 align-items-start">
+          <div className="col-md-5">
+            {product.photo ? (
+              <ProductPhoto
+                key={`${product._id}-${photoKey}`}
+                productId={product._id}
+                productName={product.name}
+                category={product.category}
+              />
+            ) : (
+              <div className="photo-placeholder">
+                <i className="bi bi-image" />
+                <span>No photo yet</span>
+              </div>
+            )}
+          </div>
+          <div className="col-md-7 d-flex flex-column gap-2">
+            <label className="form-label mb-0" htmlFor="product-photo-input">
+              {product.photo ? 'Replace photo' : 'Upload a photo'}
+            </label>
+            <input
+              id="product-photo-input"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="form-control form-control-sm"
+              onChange={uploadPhoto}
+              disabled={photoBusy}
+            />
+            {product.photo && (
+              <button
+                type="button"
+                className="btn btn-soft btn-sm danger align-self-start"
+                onClick={removePhoto}
+                disabled={photoBusy}
+              >
+                <i className="bi bi-trash3 me-1" />Remove photo
+              </button>
+            )}
+            <small className="text-muted">
+              JPG, PNG or WEBP up to 3MB. {photoBusy ? 'Working…' : ''}
+            </small>
+          </div>
+        </div>
       </div>
 
       <div className="row g-4">
@@ -292,13 +378,13 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {/* Edit product modal */}
-      <Modal open={editOpen} title="Edit product" onClose={() => setEditOpen(false)} wide>
+      {/* Edit product modal — disable backdrop close to protect the form */}
+      <Modal open={editOpen} title="Edit product" onClose={() => setEditOpen(false)} wide closeOnBackdrop={false}>
         <ProductForm initial={product} onSubmit={saveProduct} submitting={saving} onCancel={() => setEditOpen(false)} />
       </Modal>
 
-      {/* Add service modal */}
-      <Modal open={serviceOpen} title="Add service record" onClose={() => setServiceOpen(false)}>
+      {/* Add service modal — disable backdrop close to protect the form */}
+      <Modal open={serviceOpen} title="Add service record" onClose={() => setServiceOpen(false)} closeOnBackdrop={false}>
         <form onSubmit={addService} className="row g-3">
           <div className="col-md-6">
             <label className="form-label">Service type</label>

@@ -7,7 +7,11 @@ export default function ProductPhoto({ productId, productName, category }) {
   useEffect(() => {
     let active = true;
     let objectUrl = '';
-    api.get(`/products/${productId}/photo`, { responseType: 'blob' })
+    setSrc('');
+    api.get(`/products/${productId}/photo`, {
+      responseType: 'blob',
+      params: { _t: Date.now() },
+    })
       .then(({ data }) => {
         objectUrl = URL.createObjectURL(data);
         if (active) setSrc(objectUrl);

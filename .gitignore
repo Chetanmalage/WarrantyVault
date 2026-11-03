@@ -1,21 +1,24 @@
 # Dependencies
 node_modules/
-*/node_modules/
 **/node_modules/
 
-# Environment files (SECRETS)
+# Environment files (NEVER commit these)
 .env
-.env.*
-*/.env
-*/.env.*
+.env.local
+.env.*.local
+.env.production
+client/.env
+server/.env
 !.env.example
-!*/.env.example
+!**/.env.example
 
 # Build output
 client/dist/
 client/build/
+build/
+dist/
 
-# Uploaded files (user data)
+# Uploaded files
 server/uploads/*
 !server/uploads/.gitkeep
 !server/uploads/photos/
@@ -25,11 +28,22 @@ server/uploads/photos/*
 # Logs
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
 
-# OS files
+# OS / editor
 .DS_Store
 Thumbs.db
-
-# Editor
 .vscode/
 .idea/
+*.swp
+*.swo
+
+# Test / coverage
+coverage/
+.nyc_output/
+
+# Misc
+.cache/
+*.tsbuildinfo

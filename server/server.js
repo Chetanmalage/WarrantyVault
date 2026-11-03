@@ -13,7 +13,15 @@ const { startReminderScheduler } = require('./utils/reminderScheduler');
 
 const app = express();
 
-app.use(cors({ origin: process.env.CLIENT_URL || '*' }));
+// Honour the X-Forwarded-For header so req.ip reflects the real client IP
+// behind Render / other single-proxy deployments. Needed by the rate limiter.
+app.set('trust proxy', 1);
+
+const allowedOrigin = (process.env.CLIENT_URL || '').trim();
+if (!allowedOrigin) {
+  console.warn('⚠️  CLIENT_URL is not set. CORS will allow all origins (*). Set CLIENT_URL in production.');
+}
+app.use(cors({ origin: allowedOrigin || '*' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));

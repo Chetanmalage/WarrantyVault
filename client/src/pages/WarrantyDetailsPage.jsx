@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import api from '../api/axios';
+import StatusBadge from '../components/StatusBadge';
 import { date, daysLabel, money } from '../utils/format';
 
 export default function WarrantyDetailsPage() {
@@ -32,7 +33,7 @@ export default function WarrantyDetailsPage() {
             <h5 className="section-title mb-1">Warranty details</h5>
             <p className="text-muted small mb-0">Coverage summary for {product.name}</p>
           </div>
-          <span className={`pill ${product.warrantyStatus === 'expired' ? 'bad' : product.warrantyStatus === 'expiring' ? 'warn' : 'ok'}`}>{product.warrantyStatus}</span>
+          <StatusBadge status={product.warrantyStatus} />
         </div>
 
         <div className="row g-4 mt-1">

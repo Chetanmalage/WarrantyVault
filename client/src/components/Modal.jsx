@@ -1,7 +1,8 @@
-export default function Modal({ open, title, onClose, children, footer, wide }) {
+export default function Modal({ open, title, onClose, children, footer, wide, closeOnBackdrop = true }) {
   if (!open) return null;
+  const onBackdrop = closeOnBackdrop ? onClose : undefined;
   return (
-    <div className="modal-layer" onMouseDown={onClose}>
+    <div className="modal-layer" onMouseDown={onBackdrop}>
       <div className={`modal-card ${wide ? 'wide' : ''}`} onMouseDown={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <h5>{title}</h5>

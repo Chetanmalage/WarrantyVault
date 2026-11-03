@@ -56,16 +56,20 @@ export default function Settings() {
           </div>
 
           <div>
-            <label className="form-label" htmlFor="reminderDays">Remind me before expiry</label>
-            <select className="form-select" style={{ maxWidth: 220 }} value={days}
+            <label className="form-label" htmlFor="reminderDays">Remind me before expiry (days)</label>
+            <input
               id="reminderDays"
-              disabled={!enabled} onChange={(e) => setDays(e.target.value)}>
-              <option value={7}>7 days</option>
-              <option value={14}>14 days</option>
-              <option value={30}>30 days</option>
-              <option value={60}>60 days</option>
-              <option value={90}>90 days</option>
-            </select>
+              type="number"
+              min="1"
+              max="90"
+              required
+              className="form-control"
+              style={{ maxWidth: 220 }}
+              value={days}
+              disabled={!enabled}
+              onChange={(e) => setDays(e.target.value)}
+            />
+            <small className="text-muted">Any value from 1 to 90 days.</small>
           </div>
 
           <div>
