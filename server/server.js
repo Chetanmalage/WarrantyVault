@@ -27,6 +27,7 @@ app.use('/api/documents', require('./routes/documentRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/internal', require('./routes/internalRoutes'));
 
 app.use(notFound);
 app.use(errorHandler);
