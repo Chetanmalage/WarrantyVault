@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-            - name: Trigger protected reminder endpoint
+      - name: Trigger protected reminder endpoint
         shell: bash
         env:
           REMINDER_CRON_SECRET: ${{ secrets.REMINDER_CRON_SECRET }}
