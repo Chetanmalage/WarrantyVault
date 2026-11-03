@@ -7,6 +7,8 @@ const pass = process.env.SMTP_PASS || '';
 const sender = (process.env.EMAIL_FROM || process.env.SMTP_FROM || '').trim();
 const resendApiKey = (process.env.RESEND_API_KEY || '').trim();
 const sendGridApiKey = (process.env.SENDGRID_API_KEY || '').trim();
+const senderEmail = parseSender(sender).email.toLowerCase();
+const testOnlySender = provider === 'resend' && senderEmail.endsWith('@resend.dev');
 const port = Number(process.env.SMTP_PORT || 587);
 const secureSetting = (process.env.SMTP_SECURE || '').trim().toLowerCase();
 const secure = secureSetting ? ['1', 'true', 'yes'].includes(secureSetting) : port === 465;
@@ -54,6 +56,8 @@ function getMailStatus() {
       provider: providerName,
       fallbackProvider: provider === 'resend' ? 'sendgrid' : null,
       fallbackConfigured,
+      testOnlySender,
+      remindersReady: false,
       reason: provider === 'resend' ? 'invalid_resend_configuration'
         : provider === 'smtp' ? 'invalid_smtp_configuration' : 'unsupported_email_provider',
     };
@@ -64,7 +68,9 @@ function getMailStatus() {
     provider: providerName,
     fallbackProvider: provider === 'resend' ? 'sendgrid' : null,
     fallbackConfigured,
-    reason: configured ? null : 'smtp_not_configured',
+    testOnlySender,
+    remindersReady: configured && !testOnlySender,
+    reason: testOnlySender ? 'resend_test_sender' : configured ? null : 'smtp_not_configured',
   };
 }
 

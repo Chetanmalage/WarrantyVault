@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
+    "reminders:run": "node jobs/runReminders.js",
     "test": "node --test"
   },
   "engines": {

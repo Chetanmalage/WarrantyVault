@@ -47,6 +47,8 @@ test('Resend provider sends email over HTTPS and returns the delivery id', async
     provider: 'resend',
     fallbackProvider: 'sendgrid',
     fallbackConfigured: true,
+    testOnlySender: false,
+    remindersReady: true,
     reason: null,
   });
 });

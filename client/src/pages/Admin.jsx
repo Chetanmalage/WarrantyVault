@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import api from '../api/axios';
 import StatCard from '../components/StatCard';
 import StatusBadge from '../components/StatusBadge';
@@ -9,39 +9,54 @@ export default function Admin() {
   const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
   const [tab, setTab] = useState('users');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState('');
 
-  const load = async () => {
-    const [s, u, p] = await Promise.all([
-      api.get('/admin/stats'),
-      api.get('/admin/users'),
-      api.get('/admin/products'),
-    ]);
-    setStats(s.data);
-    setUsers(u.data);
-    setProducts(p.data);
-  };
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [s, u, p] = await Promise.all([
+        api.get('/admin/stats'),
+        api.get('/admin/users'),
+        api.get('/admin/products'),
+      ]);
+      setStats(s.data);
+      setUsers(u.data);
+      setProducts(p.data);
+    } catch (e) {
+      setError(e.response?.data?.message || 'Unable to load admin data. Please try again.');
+      throw e;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load().catch(() => {}); }, [load]);
 
   const toggleRole = async (u) => {
     const role = u.role === 'admin' ? 'user' : 'admin';
     if (!window.confirm(`Change role of ${u.email} to "${role}"?`)) return;
-    try { await api.patch(`/admin/users/${u._id}/role`, { role }); await load(); }
-    catch (e) { alert(e.response?.data?.message || 'Failed to update role'); }
+    try { await api.patch(`/admin/users/${u._id}/role`, { role }); setFlash('User role updated.'); await load(); }
+    catch (e) { setFlash(e.response?.data?.message || 'Failed to update role'); }
   };
 
   const removeUser = async (u) => {
     if (!window.confirm(`Delete ${u.email} and ALL their products, services and documents?`)) return;
-    try { await api.delete(`/admin/users/${u._id}`); await load(); }
-    catch (e) { alert(e.response?.data?.message || 'Failed to delete user'); }
+    try { await api.delete(`/admin/users/${u._id}`); setFlash('User and their associated data were deleted.'); await load(); }
+    catch (e) { setFlash(e.response?.data?.message || 'Failed to delete user'); }
   };
 
   const triggerReminders = async () => {
     setBusy(true); setFlash('');
     try {
       const { data } = await api.post('/admin/send-reminders');
+      if (data.blockedReason === 'resend_test_sender') {
+        setFlash('No reminders were sent. Verify a domain in Resend and set EMAIL_FROM to an address on that domain before sending user reminders.');
+        return;
+      }
       const smtpNote = data.emailConfigured ? '' : ' Email delivery is not configured; previewed emails were not delivered.';
       setFlash(`Reminder run finished — ${data.emailsSent} sent, ${data.emailsPreviewed} previewed, ${data.skipped} skipped, ${data.failed} failed.${smtpNote}`);
     } catch (e) {
@@ -70,8 +85,10 @@ export default function Admin() {
           <p className="text-muted small mb-0">Global stats and user management</p>
           {stats && (
             <p className="small mb-0 mt-1">
-              Email delivery: <span className={`pill ${stats.emailDelivery?.configured ? 'ok' : 'warn'}`}>
-                {stats.emailDelivery?.configured
+              Email delivery: <span className={`pill ${stats.emailDelivery?.configured && !stats.emailDelivery?.testOnlySender ? 'ok' : 'warn'}`}>
+                {stats.emailDelivery?.testOnlySender
+                  ? 'Resend test sender — automated reminders blocked'
+                  : stats.emailDelivery?.configured
                   ? `${stats.emailDelivery.provider === 'resend'
                     ? `Resend API${stats.emailDelivery.fallbackConfigured ? ' + SendGrid fallback' : ''}`
                     : 'SMTP'} configured`
@@ -79,20 +96,29 @@ export default function Admin() {
               </span>
             </p>
           )}
+          {stats?.emailDelivery?.testOnlySender && (
+            <p className="small text-warning-emphasis mb-0 mt-1">The shared Resend sender is test-only. Verify your own sending domain before emailing users.</p>
+          )}
         </div>
         <div className="d-flex flex-wrap gap-2">
-          <button className="btn btn-soft btn-sm" onClick={sendTestEmail} disabled={busy}>
+          <button className="btn btn-soft btn-sm" onClick={sendTestEmail} disabled={busy || loading || Boolean(error)}>
             <i className="bi bi-envelope-check me-1" />{busy ? 'Sending…' : 'Send test email to me'}
           </button>
-          <button className="btn btn-primary btn-sm" onClick={triggerReminders} disabled={busy}>
+          <button className="btn btn-primary btn-sm" onClick={triggerReminders} disabled={busy || loading || Boolean(error) || stats?.emailDelivery?.testOnlySender} title={stats?.emailDelivery?.testOnlySender ? 'Verify a Resend domain before sending reminders to users' : undefined}>
             <i className="bi bi-send me-1" />{busy ? 'Sending…' : 'Send reminders now'}
           </button>
         </div>
       </div>
 
       {flash && <div className="alert alert-info py-2 small mb-0">{flash}</div>}
+      {error && (
+        <div className="alert alert-danger py-2 small mb-0" role="alert">
+          {error} <button className="btn btn-sm btn-soft ms-2" onClick={() => load().catch(() => {})}>Try again</button>
+        </div>
+      )}
+      {loading && <div className="app-loader"><div className="spinner" /></div>}
 
-      {stats && (
+      {!loading && !error && stats && (
         <div className="stat-grid">
           <StatCard icon="bi-people" label="Users" value={stats.users} tone="primary" />
           <StatCard icon="bi-box-seam" label="Products" value={stats.products} tone="success" />
@@ -101,7 +127,7 @@ export default function Admin() {
         </div>
       )}
 
-      <div className="toolbar">
+      {!loading && !error && <div className="toolbar">
         <button className={`btn btn-sm ${tab === 'users' ? 'btn-primary' : 'btn-soft'}`}
           onClick={() => setTab('users')}>
           <i className="bi bi-people me-1" />Users ({users.length})
@@ -110,9 +136,9 @@ export default function Admin() {
           onClick={() => setTab('products')}>
           <i className="bi bi-box-seam me-1" />All products ({products.length})
         </button>
-      </div>
+      </div>}
 
-      {tab === 'users' ? (
+      {!loading && !error && (tab === 'users' ? (
         <div className="card-surface p-0 overflow-hidden">
           <div className="table-responsive">
             <table className="table wv-table align-middle mb-0">
@@ -172,7 +198,7 @@ export default function Admin() {
             </table>
           </div>
         </div>
-      )}
+      ))}
     </div>
   );
 }
