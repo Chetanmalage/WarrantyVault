@@ -7,12 +7,14 @@ const pass = process.env.SMTP_PASS || '';
 const sender = (process.env.EMAIL_FROM || process.env.SMTP_FROM || '').trim();
 const resendApiKey = (process.env.RESEND_API_KEY || '').trim();
 const sendGridApiKey = (process.env.SENDGRID_API_KEY || '').trim();
+const brevoApiKey = (process.env.BREVO_API_KEY || '').trim();
 const senderEmail = parseSender(sender).email.toLowerCase();
 const testOnlySender = provider === 'resend' && senderEmail.endsWith('@resend.dev');
 const port = Number(process.env.SMTP_PORT || 587);
 const secureSetting = (process.env.SMTP_SECURE || '').trim().toLowerCase();
 const secure = secureSetting ? ['1', 'true', 'yes'].includes(secureSetting) : port === 465;
 const hasPartialAuth = Boolean(user) !== Boolean(pass);
+
 const smtpConfigError = hasPartialAuth
   ? 'SMTP_USER and SMTP_PASS must either both be set or both be empty.'
   : (!host && (user || pass) ? 'SMTP_HOST is required when SMTP credentials are set.'
@@ -20,11 +22,22 @@ const smtpConfigError = hasPartialAuth
       : (host && secureSetting && !['1', 'true', 'yes', '0', 'false', 'no'].includes(secureSetting)
         ? 'SMTP_SECURE must be true or false.'
         : (host && !user && !sender ? 'EMAIL_FROM or SMTP_FROM is required when SMTP authentication is not used.' : ''))));
+
 const configError = provider === 'resend'
   ? (!resendApiKey ? 'RESEND_API_KEY is required when EMAIL_PROVIDER=resend.'
     : (!sender ? 'EMAIL_FROM is required when EMAIL_PROVIDER=resend.' : ''))
-  : (provider === 'smtp' ? smtpConfigError : 'EMAIL_PROVIDER must be either "smtp" or "resend".');
+  : provider === 'sendgrid'
+    ? (!sendGridApiKey ? 'SENDGRID_API_KEY is required when EMAIL_PROVIDER=sendgrid.'
+      : (!sender ? 'EMAIL_FROM is required when EMAIL_PROVIDER=sendgrid.' : ''))
+    : provider === 'brevo'
+      ? (!brevoApiKey ? 'BREVO_API_KEY is required when EMAIL_PROVIDER=brevo.'
+        : (!sender ? 'EMAIL_FROM is required when EMAIL_PROVIDER=brevo.' : ''))
+      : (provider === 'smtp'
+        ? smtpConfigError
+        : 'EMAIL_PROVIDER must be "smtp", "resend", "sendgrid", or "brevo".');
+
 const fallbackConfigured = provider === 'resend' && Boolean(sendGridApiKey && sender);
+
 let transporter = null;
 let previewWarningShown = false;
 
@@ -49,7 +62,11 @@ if (provider === 'smtp' && host && !configError) {
 }
 
 function getMailStatus() {
-  const providerName = provider === 'resend' ? 'resend' : provider === 'smtp' ? 'smtp' : provider;
+  const providerName = provider === 'resend' ? 'resend'
+    : provider === 'sendgrid' ? 'sendgrid'
+    : provider === 'brevo' ? 'brevo'
+    : provider === 'smtp' ? 'smtp' : provider;
+
   if (configError) {
     return {
       configured: false,
@@ -59,10 +76,16 @@ function getMailStatus() {
       testOnlySender,
       remindersReady: false,
       reason: provider === 'resend' ? 'invalid_resend_configuration'
-        : provider === 'smtp' ? 'invalid_smtp_configuration' : 'unsupported_email_provider',
+        : provider === 'sendgrid' ? 'invalid_sendgrid_configuration'
+        : provider === 'brevo' ? 'invalid_brevo_configuration'
+        : provider === 'smtp' ? 'invalid_smtp_configuration'
+        : 'unsupported_email_provider',
     };
   }
-  const configured = provider === 'resend' ? true : Boolean(transporter);
+
+  const configured = ['resend', 'sendgrid', 'brevo'].includes(provider)
+    ? true
+    : Boolean(transporter);
   return {
     configured,
     provider: providerName,
@@ -103,7 +126,9 @@ async function sendWithResend({ to, subject, html, text }) {
 
 function parseSender(value) {
   const match = value.match(/^\s*(.*?)\s*<([^<>]+)>\s*$/);
-  return match ? { email: match[2].trim(), name: match[1].replace(/^"|"$/g, '').trim() } : { email: value };
+  return match
+    ? { email: match[2].trim(), name: match[1].replace(/^"|"$/g, '').trim() }
+    : { email: value };
 }
 
 async function sendWithSendGrid({ to, subject, html, text }) {
@@ -125,15 +150,69 @@ async function sendWithSendGrid({ to, subject, html, text }) {
     signal: AbortSignal.timeout(15_000),
   });
   if (response.status !== 202) {
-    const error = new Error(`SendGrid API request failed (${response.status})`);
+    const body = await readJson(response);
+    const detail = body?.errors?.[0]?.message || body?.message || '';
+    const error = new Error(
+      `SendGrid API request failed (${response.status})${detail ? `: ${detail}` : ''}`
+    );
     error.status = response.status;
     throw error;
   }
-  return { delivered: true, messageId: response.headers?.get?.('x-message-id') || undefined, provider: 'sendgrid' };
+  return {
+    delivered: true,
+    messageId: response.headers?.get?.('x-message-id') || undefined,
+    provider: 'sendgrid',
+  };
+}
+
+async function sendWithBrevo({ to, subject, html, text }) {
+  const parsed = parseSender(sender);
+  const body = {
+    sender: { email: parsed.email, name: parsed.name || 'WarrantyVault' },
+    to: [{ email: to }],
+    subject,
+    htmlContent: html || '',
+    textContent: text || '',
+  };
+
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'api-key': brevoApiKey,
+      accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(15_000),
+  });
+
+  const result = await readJson(response);
+  if (!response.ok) {
+    const detail = result?.message || result?.error || '';
+    const error = new Error(
+      `Brevo API request failed (${response.status})${detail ? `: ${detail}` : ''}`
+    );
+    error.status = response.status;
+    throw error;
+  }
+
+  return {
+    delivered: true,
+    messageId: result.messageId || undefined,
+    provider: 'brevo',
+  };
 }
 
 async function sendMail({ to, subject, html, text }) {
   if (configError) throw new Error(configError);
+
+  if (provider === 'brevo') {
+    return sendWithBrevo({ to, subject, html, text });
+  }
+
+  if (provider === 'sendgrid') {
+    return sendWithSendGrid({ to, subject, html, text });
+  }
 
   if (provider === 'resend') {
     try {
@@ -152,7 +231,7 @@ async function sendMail({ to, subject, html, text }) {
 
   if (!transporter) {
     if (!previewWarningShown) {
-      console.warn('Email preview only; configure SMTP or Resend to enable delivery.');
+      console.warn('Email preview only; configure SMTP, Resend, SendGrid, or Brevo to enable delivery.');
       previewWarningShown = true;
     }
     console.log(`[MAIL PREVIEW] Subject: ${subject}`);
